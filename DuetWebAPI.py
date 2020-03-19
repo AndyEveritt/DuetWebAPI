@@ -87,6 +87,23 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/machine/status')
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
+            return(len(j['result']['move']['extruders']))
+
+    def getNumTools(self):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_status?type=2')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            jc=j['coords']['xyz']
+            an=j['axisNames']
+            ret=self.json.loads('{}')
+            for i in range(0,len(jc)):
+                ret[ an[i] ] = jc[i]
+            return(ret)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
             return(len(j['result']['tools']))
 
     def gCode(self,command):
