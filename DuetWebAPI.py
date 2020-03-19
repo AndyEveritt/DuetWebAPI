@@ -24,7 +24,7 @@ class DuetWebAPI:
         self._base_url = base_url
         try:
             URL=(f'{self._base_url}'+'/rr_status?type=1')
-            r = self.requests.get(URL)
+            r = self.requests.get(URL,timeout=(2,60))
             j = self.json.loads(r.text)
             _=j['coords']
             self.pt = 2
@@ -32,18 +32,20 @@ class DuetWebAPI:
         except:
             try:
                 URL=(f'{self._base_url}'+'/machine/status')
-                r = self.requests.get(URL)
+                r = self.requests.get(URL,timeout=(2,60))
                 j = self.json.loads(r.text)
                 _=j['result']
                 self.pt = 3
                 return
             except:
                 print(self._base_url," does not appear to be a RRF2 or RRF3 printer", file=self.sys.stderr)
-                raise
-                return
+                return 
 
     def printerType(self):
         return(self.pt)
+
+    def baseURL(self):
+        return(self._base_url)
 
     def getCoords(self):
         if (self.pt == 2):
@@ -70,6 +72,22 @@ class DuetWebAPI:
                 ret[ ja[i]['letter'] ] = jd[i]['position']
             return(ret)
 
+    def getNumExtruders(self):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_status?type=2')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            jc=j['coords']['xyz']
+            an=j['axisNames']
+            ret=self.json.loads('{}')
+            for i in range(0,len(jc)):
+                ret[ an[i] ] = jc[i]
+            return(ret)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            return(len(j['result']['tools']))
 
     def gCode(self,command):
         if (self.pt == 2):
