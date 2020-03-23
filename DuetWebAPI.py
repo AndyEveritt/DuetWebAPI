@@ -77,12 +77,8 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/rr_status?type=2')
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
-            jc=j['coords']['xyz']
-            an=j['axisNames']
-            ret=self.json.loads('{}')
-            for i in range(0,len(jc)):
-                ret[ an[i] ] = jc[i]
-            return(ret)
+            jc=j['coords']['extr']
+            return(len(jc))
         if (self.pt == 3):
             URL=(f'{self._base_url}'+'/machine/status')
             r = self.requests.get(URL)
@@ -94,12 +90,8 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/rr_status?type=2')
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
-            jc=j['coords']['xyz']
-            an=j['axisNames']
-            ret=self.json.loads('{}')
-            for i in range(0,len(jc)):
-                ret[ an[i] ] = jc[i]
-            return(ret)
+            jc=j['tools']
+            return(len(jc))
         if (self.pt == 3):
             URL=(f'{self._base_url}'+'/machine/status')
             r = self.requests.get(URL)

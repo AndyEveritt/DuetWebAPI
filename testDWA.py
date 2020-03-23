@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import DuetWebAPI as DWA
 import json
 
@@ -11,11 +12,16 @@ print("Printer Type D100 is ",D100.printerType())
 print("Printer Type D101 is ",D101.printerType())
 print("Printer Type D127 is ",D127.printerType())
 
-print("D100 coordiates are",D100.getCoords())
-
+print("D100 coordinates are",D100.getCoords())
 d=D101.getCoords()
-print("D101 coordiates are",d)
+print("D101 coordinates are",d)
 print("D101 X axis is ",d['X'])
+
+print("D100 numExtruders ",D100.getNumExtruders())
+print("D101 numExtruders ",D101.getNumExtruders())
+
+print("D100 numTools ",D100.getNumTools())
+print("D101 numTools ",D101.getNumTools())
 
 
 
