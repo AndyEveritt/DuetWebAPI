@@ -20,6 +20,7 @@ class DuetWebAPI:
     pt = 0
     _base_url = ''
 
+
     def __init__(self,base_url):
         self._base_url = base_url
         try:
@@ -40,6 +41,9 @@ class DuetWebAPI:
             except:
                 print(self._base_url," does not appear to be a RRF2 or RRF3 printer", file=self.sys.stderr)
                 return 
+####
+# The following methods are a more atomic, reading/writing basic data structures in the printer. 
+####
 
     def printerType(self):
         return(self.pt)
@@ -111,3 +115,36 @@ class DuetWebAPI:
             print("gCode command return code = ",r.status_code)
             print(r.reason)
             return(r.status_code)
+
+    def getFilenamed(self,filename):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_download?name='+filename)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/file/'+filename)
+        r = self.requests.get(URL)
+        return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))
+
+####
+# The following methods provide services built on the atomics above. 
+####
+
+
+    # Given a line from config g that defines an endstop (N574) or Z probe (M558),
+    # Return a line that will define the same thing to a "nil" pin, i.e. undefine it
+    def _nilEndstop(self,configLine):
+        ret = ''
+        for each in [word for word in configLine.split()]: ret = ret + (each if (not (('P' in each[0]) or ('p' in each[0]))) else 'P"nil"') + ' '
+        return(ret)
+
+    def clearEndstops(self):
+      c = self.getFilenamed('/sys/config.g')
+      for each in [line for line in c if (('M574' in line) or ('M558' in line)                   )]: self.gCode(self._nilEndstop(each))
+
+    def resetEndstops(self):
+      c = self.getFilenamed('/sys/config.g')
+      for each in [line for line in c if (('M574' in line) or ('M558' in line)                   )]: self.gCode(self._nilEndstop(each))
+      for each in [line for line in c if (('M574' in line) or ('M558' in line) or ('G31' in line))]: self.gCode(each)
+
+    def resetAxisLimits(self):
+      c = self.getFilenamed('/sys/config.g')
+      for each in [line for line in c if 'M208' in line]: self.gCode(each)

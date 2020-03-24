@@ -23,7 +23,10 @@ print("D101 numExtruders ",D101.getNumExtruders())
 print("D100 numTools ",D100.getNumTools())
 print("D101 numTools ",D101.getNumTools())
 
+print("D100 length of config.g ",len(D100.getFilenamed('/sys/config.g')))
+print("D101 length of config.g ",len(D101.getFilenamed('/sys/config.g')))
 
 
 D101.gCode("G91 G1 X0.5 G90")
 
+  	
