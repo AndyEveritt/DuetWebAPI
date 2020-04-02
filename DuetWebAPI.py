@@ -102,6 +102,21 @@ class DuetWebAPI:
             j = self.json.loads(r.text)
             return(len(j['result']['tools']))
 
+    def getStatus(self):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_status?type=2')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            s=j['status']
+            if ('I' in s): return('idle')
+            if ('P' in s): return('processing')
+            return(s)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            return(j['result']['state']['status'])
+
     def gCode(self,command):
         if (self.pt == 2):
             URL=(f'{self._base_url}'+'/rr_gcode?gcode='+command)
