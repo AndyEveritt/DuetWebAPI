@@ -67,13 +67,13 @@ class DuetWebAPI:
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
             ja=j['result']['move']['axes']
-            jd=j['result']['move']['drives']
-            ad=self.json.loads('{}')
-            for i in range(0,len(ja)):
-                ad[ ja[i]['letter'] ] = ja[i]['drives'][0]
+            #d=j['result']['move']['drives']
+            #ad=self.json.loads('{}')
+            #for i in range(0,len(ja)):
+            #    ad[ ja[i]['letter'] ] = ja[i]['drives'][0]
             ret=self.json.loads('{}')
             for i in range(0,len(ja)):
-                ret[ ja[i]['letter'] ] = jd[i]['position']
+                ret[ ja[i]['letter'] ] = ja[i]['userPosition']
             return(ret)
 
     def getNumExtruders(self):
