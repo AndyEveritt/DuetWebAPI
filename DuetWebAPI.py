@@ -76,6 +76,20 @@ class DuetWebAPI:
                 ret[ ja[i]['letter'] ] = ja[i]['userPosition']
             return(ret)
 
+    def getG10ToolOffset(self,tool):
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            ja=j['result']['move']['axes']
+            jt=j['result']['tools']
+            ret=self.json.loads('{}')
+            to = jt[tool]['offsets']
+            for i in range(0,len(to)):
+                ret[ ja[i]['letter'] ] = to[i]
+            return(ret)
+        return({'X':0,'Y':0,'Z':0})      # Dummy for now              
+
     def getNumExtruders(self):
         if (self.pt == 2):
             URL=(f'{self._base_url}'+'/rr_status?type=2')
@@ -139,6 +153,8 @@ class DuetWebAPI:
         r = self.requests.get(URL)
         return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))
 
+
+
 ####
 # The following methods provide services built on the atomics above. 
 ####
@@ -153,13 +169,17 @@ class DuetWebAPI:
 
     def clearEndstops(self):
       c = self.getFilenamed('/sys/config.g')
-      for each in [line for line in c if (('M574' in line) or ('M558' in line)                   )]: self.gCode(self._nilEndstop(each))
+      for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line)                   )]: self.gCode(self._nilEndstop(each))
 
     def resetEndstops(self):
       c = self.getFilenamed('/sys/config.g')
-      for each in [line for line in c if (('M574' in line) or ('M558' in line)                   )]: self.gCode(self._nilEndstop(each))
-      for each in [line for line in c if (('M574' in line) or ('M558' in line) or ('G31' in line))]: self.gCode(each)
+      for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line)                    )]: self.gCode(self._nilEndstop(each))
+      for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line) or ('G31 ' in line))]: self.gCode(each)
 
     def resetAxisLimits(self):
       c = self.getFilenamed('/sys/config.g')
-      for each in [line for line in c if 'M208' in line]: self.gCode(each)
+      for each in [line for line in c if 'M208 ' in line]: self.gCode(each)
+
+    def resetG10(self):
+      c = self.getFilenamed('/sys/config.g')
+      for each in [line for line in c if 'G10 ' in line]: self.gCode(each)
