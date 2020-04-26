@@ -76,6 +76,21 @@ class DuetWebAPI:
                 ret[ ja[i]['letter'] ] = ja[i]['userPosition']
             return(ret)
 
+    def getLayer(self):
+        if (self.pt == 2):
+           URL=(f'{self._base_url}'+'/rr_status?type=3')
+           r = self.requests.get(URL)
+           j = self.json.loads(r.text)
+           s = j['currentLayer']
+           return (s)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            s = j['result']['job']['layer']
+            return(s)
+
+
     def getG10ToolOffset(self,tool):
         if (self.pt == 3):
             URL=(f'{self._base_url}'+'/machine/status')
@@ -124,6 +139,8 @@ class DuetWebAPI:
             s=j['status']
             if ('I' in s): return('idle')
             if ('P' in s): return('processing')
+            if ('S' in s): return('paused')
+            if ('B' in s): return('canceling')
             return(s)
         if (self.pt == 3):
             URL=(f'{self._base_url}'+'/machine/status')
