@@ -88,8 +88,8 @@ class DuetWebAPI:
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
             s = j['result']['job']['layer']
+            if (s == None): s=0
             return(s)
-
 
     def getG10ToolOffset(self,tool):
         if (self.pt == 3):
@@ -169,6 +169,19 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/machine/file/'+filename)
         r = self.requests.get(URL)
         return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))
+
+    def getTemperatures(self):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_status?type=2')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            return('Error: getTemperatures not implemented (yet) for RRF V2 printers.')
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r  = self.requests.get(URL)
+            j  = self.json.loads(r.text)
+            jsa=j['result']['sensors']['analog']
+            return(jsa)
 
 
 
