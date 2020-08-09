@@ -133,6 +133,7 @@ class DuetWebAPI:
 
     def getStatus(self):
         if (self.pt == 2):
+            print("yeet")
             URL=(f'{self._base_url}'+'/rr_status?type=2')
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
@@ -180,9 +181,23 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/machine/status')
             r  = self.requests.get(URL)
             j  = self.json.loads(r.text)
-            jsa=j['result']['sensors']['analog']
+            #jsa=j['result']['sensors']['analog']
+            jsa=j['result']['heat']['heaters']
             return(jsa)
 
+    def getJob(self):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_fileinfo?')
+            r = self.requests.get(URL)
+            j = self.json.loads(r.text)
+            return(j)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/status')
+            r  = self.requests.get(URL)
+            j  = self.json.loads(r.text)
+            
+            jsa=j['result']
+            return(jsa)
 
 
 ####
