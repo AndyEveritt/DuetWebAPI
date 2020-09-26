@@ -17,6 +17,7 @@ class DuetWebAPI:
     import requests
     import json
     import sys
+
     pt = 0
     _base_url = ''
 
@@ -133,7 +134,6 @@ class DuetWebAPI:
 
     def getStatus(self):
         if (self.pt == 2):
-            print("yeet")
             URL=(f'{self._base_url}'+'/rr_status?type=2')
             r = self.requests.get(URL)
             j = self.json.loads(r.text)
@@ -171,6 +171,28 @@ class DuetWebAPI:
         r = self.requests.get(URL)
         return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))
 
+    def getDirectory(self, directory):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_download?name='+directory)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/directory/'+directory)
+        r = self.requests.get(URL)
+        return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))    
+
+    def yeetJob(self, filename, file):
+        
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_download?name='+filename)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/file/gcodes/'+filename)
+        r = self.requests.put(URL, data=file)
+        if (r.ok):
+            print('YAY')
+            return(0)
+        else:
+            print("gCode command return code = ",r.status_code)
+            print(r.reason)
+
     def getTemperatures(self):
         if (self.pt == 2):
             URL=(f'{self._base_url}'+'/rr_status?type=2')
@@ -181,23 +203,9 @@ class DuetWebAPI:
             URL=(f'{self._base_url}'+'/machine/status')
             r  = self.requests.get(URL)
             j  = self.json.loads(r.text)
-            #jsa=j['result']['sensors']['analog']
-            jsa=j['result']['heat']['heaters']
+            jsa=j['result']['sensors']['analog']
             return(jsa)
 
-    def getJob(self):
-        if (self.pt == 2):
-            URL=(f'{self._base_url}'+'/rr_fileinfo?')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            return(j)
-        if (self.pt == 3):
-            URL=(f'{self._base_url}'+'/machine/status')
-            r  = self.requests.get(URL)
-            j  = self.json.loads(r.text)
-            
-            jsa=j['result']
-            return(jsa)
 
 
 ####
