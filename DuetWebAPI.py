@@ -179,15 +179,14 @@ class DuetWebAPI:
         r = self.requests.get(URL)
         return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))    
 
-    def yeetJob(self, filename, file):
+    def putFile(self, filepath, file):
         
         if (self.pt == 2):
-            URL=(f'{self._base_url}'+'/rr_download?name='+filename)
+            URL=(f'{self._base_url}'+'/rr_upload?name='+filepath) #lol, probably not correct, fix welcome
         if (self.pt == 3):
-            URL=(f'{self._base_url}'+'/machine/file/gcodes/'+filename)
+            URL=(f'{self._base_url}'+'/machine/file/'+filepath)
         r = self.requests.put(URL, data=file)
         if (r.ok):
-            print('YAY')
             return(0)
         else:
             print("gCode command return code = ",r.status_code)
@@ -236,3 +235,10 @@ class DuetWebAPI:
     def resetG10(self):
       c = self.getFilenamed('/sys/config.g')
       for each in [line for line in c if 'G10 ' in line]: self.gCode(each)
+
+    def yeetJob(self, filename, file):
+        path=f"gcodes/{filename}"
+        ret = self.putFile(path, file)
+        if ret==0:
+            print('YAY WE DID THE THING')
+        
