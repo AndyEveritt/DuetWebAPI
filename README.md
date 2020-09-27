@@ -11,7 +11,7 @@ Python interface to Duet RepRap V2 or V3 firmware.
 
 # Install
 * Download the DuetWebAPI.py script. 
-  * Or ```git clone https://github.com/DanalEstes/DuetWebAPI```
+  * Or ```git clone https://github.com/lukeslaboratory/DuetWebAPI```
   
 * Place it in the directory of the script that is going to include it
   * Or in any directory in the python library path,
