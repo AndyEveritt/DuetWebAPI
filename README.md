@@ -1,5 +1,5 @@
 # DuetWebAPI
-Python interface to Duet RepRap V2 or V3 firmware. 
+Python interface to Duet RepRap V2 or V3 firmware via Http REST API. 
 
 * Works over IP network.  
 * Does not support passwords on the printer. 
@@ -10,12 +10,8 @@ Python interface to Duet RepRap V2 or V3 firmware.
   as long as they continue V2 V3 abstractaion.
 
 # Install
-* Download the DuetWebAPI.py script. 
-  * Or ```git clone https://github.com/lukeslaboratory/DuetWebAPI```
-  
-* Place it in the directory of the script that is going to include it
-  * Or in any directory in the python library path,
-  * Or create a symbolic link ```ln -s ../DuetWebAPI/DuetWebAPI.py DuetWebAPI.py```
+* add `"git+https://github.com/AndyEveritt/DuetWebAPI.git@master#egg=duetwebapi"` to `requirements.txt`
+* `pip install -r requirements.txt`
 
 # Usage
-* See 'testDWA.py' for examples. 
+* See 'examples.py' for examples. 

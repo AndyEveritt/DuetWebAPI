@@ -1,1 +1,1 @@
-from DuetWebAPI import DuetWebAPI
+from .DuetWebAPI import DuetWebAPI
