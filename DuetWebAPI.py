@@ -17,6 +17,7 @@ class DuetWebAPI:
     import requests
     import json
     import sys
+
     pt = 0
     _base_url = ''
 
@@ -170,6 +171,27 @@ class DuetWebAPI:
         r = self.requests.get(URL)
         return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))
 
+    def getDirectory(self, directory):
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_download?name='+directory)
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/directory/'+directory)
+        r = self.requests.get(URL)
+        return(r.text.splitlines()) # replace('\n',str(chr(0x0a))).replace('\t','    '))    
+
+    def putFile(self, filepath, file):
+        
+        if (self.pt == 2):
+            URL=(f'{self._base_url}'+'/rr_upload?name='+filepath) #lol, probably not correct, fix welcome
+        if (self.pt == 3):
+            URL=(f'{self._base_url}'+'/machine/file/'+filepath)
+        r = self.requests.put(URL, data=file)
+        if (r.ok):
+            return(0)
+        else:
+            print("gCode command return code = ",r.status_code)
+            print(r.reason)
+
     def getTemperatures(self):
         if (self.pt == 2):
             URL=(f'{self._base_url}'+'/rr_status?type=2')
@@ -213,3 +235,10 @@ class DuetWebAPI:
     def resetG10(self):
       c = self.getFilenamed('/sys/config.g')
       for each in [line for line in c if 'G10 ' in line]: self.gCode(each)
+
+    def yeetJob(self, filename, file):
+        path=f"gcodes/{filename}"
+        ret = self.putFile(path, file)
+        if ret==0:
+            print('YAY WE DID THE THING')
+        
