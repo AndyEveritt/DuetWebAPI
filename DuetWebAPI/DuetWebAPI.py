@@ -17,30 +17,34 @@ class DuetWebAPI:
     import requests
     import json
     import sys
+    import logging
 
     pt = 0
     _base_url = ''
 
-    def __init__(self, base_url):
-        self._base_url = base_url
-        try:
-            URL = (f'{self._base_url}'+'/rr_model?type=1')
+    def __init__(self, base_url: str):
+        def check_url(url: str):
             r = self.requests.get(URL, timeout=(2, 60))
-            j = self.json.loads(r.text)
-            _ = j['coords']
+            if str(r.status_code)[0] == '2':
+                return True
+            return False
+
+        self._base_url = base_url
+
+        URL = (f'{self._base_url}'+'/rr_model?flag=d10vn')
+        if check_url(URL):
+            self.model_url = URL
             self.pt = 2
             return
-        except:
-            try:
-                URL = (f'{self._base_url}'+'/machine/status')
-                r = self.requests.get(URL, timeout=(2, 60))
-                j = self.json.loads(r.text)
-                _ = j['boards'][0]['firmwareVersion']
-                self.pt = 3
-                return
-            except:
-                print(self._base_url, " does not appear to be a RRF2 or RRF3 printer", file=self.sys.stderr)
-                return
+
+        URL = (f'{self._base_url}'+'/machine/status')
+        if check_url(URL):
+            self.model_url = URL
+            self.pt = 3
+            return
+
+        print(self._base_url, " does not appear to be a RRF3 printer", file=self.sys.stderr)
+        return
 ####
 # The following methods are a more atomic, reading/writing basic data structures in the printer.
 ####
@@ -50,6 +54,22 @@ class DuetWebAPI:
 
     def baseURL(self):
         return(self._base_url)
+
+    def get_model(self, key=None):
+        if (self.pt == 2):
+            URL = f'{self._base_url}/rr_model'
+            r = self.requests.get(URL, {'flags': 'd99vn', 'key': key})
+            j = self.json.loads(r.text)
+            result = j['result']
+        elif (self.pt == 3):
+            URL = f'{self._base_url}/machine/status'
+            r = self.requests.get(URL, {'key': 'move'})
+            result = self.json.loads(r.text)
+        else:
+            self.logging.error(f'{self._base_url} does not have an object model')
+            raise ValueError
+
+        return result
 
     def getCoords(self):
         if (self.pt == 2):
@@ -217,6 +237,7 @@ class DuetWebAPI:
     # Given a line from config g that defines an endstop (N574) or Z probe (M558),
     # Return a line that will define the same thing to a "nil" pin, i.e. undefine it
 
+
     def _nilEndstop(self, configLine):
         ret = ''
         for each in [word for word in configLine.split()]:
@@ -250,3 +271,10 @@ class DuetWebAPI:
         ret = self.putFile(path, file)
         if ret == 0:
             print('YAY WE DID THE THING')
+
+
+riley = DuetWebAPI('http://riley')
+force_rig = DuetWebAPI('http://forcerig')
+force_rig.get_model()
+riley.get_model()
+pass
