@@ -12,269 +12,163 @@
 # Released under The MIT License. Full text available via https://opensource.org/licenses/MIT
 #
 # Requires Python3
+from typing import Dict
+import requests
+import json
+import sys
+import logging
 
-class DuetWebAPI:
-    import requests
-    import json
-    import sys
-    import logging
 
-    pt = 0
-    _base_url = ''
+class DuetWebAPIFactory:
+    def __init__(self):
+        self._creators = {}
 
-    def __init__(self, base_url: str):
-        def check_url(url: str):
-            r = self.requests.get(URL, timeout=(2, 60))
-            if str(r.status_code)[0] == '2':
-                return True
-            return False
+    def register_api(self, name: str, creator: object, url_suffix: str):
+        self._creators[name] = {'creator': creator, 'url_suffix': url_suffix}
 
+    def get_api(self, base_url):
+        for api in self._creators.values():
+            url = base_url + api['url_suffix']
+            r = requests.get(url, timeout=(2, 60))
+            if r.ok:
+                creator = api['creator']
+                return creator(base_url)
+
+        self.logging.error(f'Can not get API for {self.base_url}')
+        raise ValueError
+
+
+class DuetAPI:
+    def __init__(self, base_url) -> None:
         self._base_url = base_url
 
-        URL = (f'{self._base_url}'+'/rr_model?flag=d10vn')
-        if check_url(URL):
-            self.model_url = URL
-            self.pt = 2
-            return
+    def get_model(self):
+        raise NotImplementedError
 
-        URL = (f'{self._base_url}'+'/machine/status')
-        if check_url(URL):
-            self.model_url = URL
-            self.pt = 3
-            return
+    def post_code(self, code):
+        raise NotImplementedError
 
-        print(self._base_url, " does not appear to be a RRF3 printer", file=self.sys.stderr)
-        return
-####
-# The following methods are a more atomic, reading/writing basic data structures in the printer.
-####
+    def get_file(self, filename, path):
+        raise NotImplementedError
 
-    def printerType(self):
-        return(self.pt)
+    def put_file(self, filename, path):
+        raise NotImplementedError
 
-    def baseURL(self):
-        return(self._base_url)
+    def get_fileinfo(self, filename):
+        raise NotImplementedError
 
-    def get_model(self, key=None):
-        if (self.pt == 2):
-            URL = f'{self._base_url}/rr_model'
-            r = self.requests.get(URL, {'flags': 'd99vn', 'key': key})
-            j = self.json.loads(r.text)
-            result = j['result']
-        elif (self.pt == 3):
-            URL = f'{self._base_url}/machine/status'
-            r = self.requests.get(URL, {'key': 'move'})
-            result = self.json.loads(r.text)
-        else:
-            self.logging.error(f'{self._base_url} does not have an object model')
+    def delete_file(self, filename):
+        raise NotImplementedError
+
+    def move_file(self, from_path, to_path, force=False):
+        raise NotImplementedError
+
+    def get_directory(self, directory):
+        raise NotImplementedError
+
+    def put_directory(self, directory):
+        raise NotImplementedError
+
+
+class DWCAPI(DuetAPI):
+    def get_model(self, key=None) -> Dict:
+        url = f'{self._base_url}/rr_model'
+        r = requests.get(url, {'flags': 'd99vn', 'key': key})
+        if not r.ok:
             raise ValueError
+        j = json.loads(r.text)
+        return j['result']
 
-        return result
+    def post_code(self, code) -> Dict:
+        url = f'{self._base_url}/rr_gcode'
+        r = requests.get(url, {'gcode': code})
+        if not r.ok:
+            raise ValueError
+        return json.loads(r.text)
 
-    def getCoords(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=2')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            jc = j['coords']['xyz']
-            an = j['axisNames']
-            ret = self.json.loads('{}')
-            for i in range(0, len(jc)):
-                ret[an[i]] = jc[i]
-            return(ret)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            ja = j['result']['move']['axes']
-            # d=j['result']['move']['drives']
-            # ad=self.json.loads('{}')
-            # for i in range(0,len(ja)):
-            #    ad[ ja[i]['letter'] ] = ja[i]['drives'][0]
-            ret = self.json.loads('{}')
-            for i in range(0, len(ja)):
-                ret[ja[i]['letter']] = ja[i]['userPosition']
-            return(ret)
+    def get_file(self, filename: str, path: str = 'gcodes') -> str:
+        """
+        filename: name of the file you want to download including extension
+        path: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
 
-    def getLayer(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=3')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            s = j['currentLayer']
-            return (s)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            s = j['result']['job']['layer']
-            if (s == None):
-                s = 0
-            return(s)
+        returns the file as a string
+        """
+        url = f'{self._base_url}/rr_download'
+        r = requests.get(url, {'name': f'/{path}/{filename}'})
+        if not r.ok:
+            raise ValueError
+        return r.text
 
-    def getG10ToolOffset(self, tool):
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            ja = j['result']['move']['axes']
-            jt = j['result']['tools']
-            ret = self.json.loads('{}')
-            to = jt[tool]['offsets']
-            for i in range(0, len(to)):
-                ret[ja[i]['letter']] = to[i]
-            return(ret)
-        return({'X': 0, 'Y': 0, 'Z': 0})      # Dummy for now
+    def put_file(self, filename):
+        pass
 
-    def getNumExtruders(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=2')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            jc = j['coords']['extr']
-            return(len(jc))
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            return(len(j['result']['move']['extruders']))
+    def get_fileinfo(self, filename):
+        pass
 
-    def getNumTools(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=2')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            jc = j['tools']
-            return(len(jc))
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            return(len(j['result']['tools']))
+    def delete_file(self, filename):
+        pass
 
-    def getStatus(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=2')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            s = j['status']
-            if ('I' in s):
-                return('idle')
-            if ('P' in s):
-                return('processing')
-            if ('S' in s):
-                return('paused')
-            if ('B' in s):
-                return('canceling')
-            return(s)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            return(j['result']['state']['status'])
+    def move_file(self, from_path, to_path, force=False):
+        pass
 
-    def gCode(self, command):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_gcode?gcode='+command)
-            r = self.requests.get(URL)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/code/')
-            r = self.requests.post(URL, data=command)
-        if (r.ok):
-            return(0)
-        else:
-            print("gCode command return code = ", r.status_code)
-            print(r.reason)
-            return(r.status_code)
+    def get_directory(self, directory):
+        pass
 
-    def getFilenamed(self, filename):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_download?name='+filename)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/file/'+filename)
-        r = self.requests.get(URL)
-        return(r.text.splitlines())  # replace('\n',str(chr(0x0a))).replace('\t','    '))
-
-    def getDirectory(self, directory):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_download?name='+directory)
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/directory/'+directory)
-        r = self.requests.get(URL)
-        return(r.text.splitlines())  # replace('\n',str(chr(0x0a))).replace('\t','    '))
-
-    def putFile(self, filepath, file):
-
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_upload?name='+filepath)  # lol, probably not correct, fix welcome
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/file/'+filepath)
-        r = self.requests.put(URL, data=file)
-        if (r.ok):
-            return(0)
-        else:
-            print("gCode command return code = ", r.status_code)
-            print(r.reason)
-
-    def getTemperatures(self):
-        if (self.pt == 2):
-            URL = (f'{self._base_url}'+'/rr_status?type=2')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            return('Error: getTemperatures not implemented (yet) for RRF V2 printers.')
-        if (self.pt == 3):
-            URL = (f'{self._base_url}'+'/machine/status')
-            r = self.requests.get(URL)
-            j = self.json.loads(r.text)
-            jsa = j['result']['sensors']['analog']
-            return(jsa)
+    def put_directory(self, directory):
+        pass
 
 
-####
-# The following methods provide services built on the atomics above.
-####
+class DSFAPI(DuetAPI):
+    def get_model(self) -> Dict:
+        url = f'{self._base_url}/machine/status'
+        r = requests.get(url)
+        j = json.loads(r.text)
+        return j
 
-    # Given a line from config g that defines an endstop (N574) or Z probe (M558),
-    # Return a line that will define the same thing to a "nil" pin, i.e. undefine it
+    def post_code(self, code) -> str:
+        url = f'{self._base_url}/machine/code'
+        r = requests.post(url, data=code)
+        return r.text
+
+    def get_file(self, filename, path='gcodes'):
+        """
+        filename: name of the file you want to download including extension
+        path: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+
+        returns the file as a string
+        """
+        url = f'{self._base_url}/machine/file/{path}/{filename}'
+        r = requests.get(url)
+        if not r.ok:
+            raise ValueError
+        return r.text
+
+    def put_file(self, filename):
+        pass
+
+    def get_fileinfo(self, filename):
+        pass
+
+    def delete_file(self, filename):
+        pass
+
+    def move_file(self, from_path, to_path, force=False):
+        pass
+
+    def get_directory(self, directory):
+        pass
+
+    def put_directory(self, directory):
+        pass
 
 
-    def _nilEndstop(self, configLine):
-        ret = ''
-        for each in [word for word in configLine.split()]:
-            ret = ret + (each if (not (('P' in each[0]) or ('p' in each[0]))) else 'P"nil"') + ' '
-        return(ret)
-
-    def clearEndstops(self):
-        c = self.getFilenamed('/sys/config.g')
-        for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line))]:
-            self.gCode(self._nilEndstop(each))
-
-    def resetEndstops(self):
-        c = self.getFilenamed('/sys/config.g')
-        for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line))]:
-            self.gCode(self._nilEndstop(each))
-        for each in [line for line in c if (('M574 ' in line) or ('M558 ' in line) or ('G31 ' in line))]:
-            self.gCode(each)
-
-    def resetAxisLimits(self):
-        c = self.getFilenamed('/sys/config.g')
-        for each in [line for line in c if 'M208 ' in line]:
-            self.gCode(each)
-
-    def resetG10(self):
-        c = self.getFilenamed('/sys/config.g')
-        for each in [line for line in c if 'G10 ' in line]:
-            self.gCode(each)
-
-    def yeetJob(self, filename, file):
-        path = f"gcodes/{filename}"
-        ret = self.putFile(path, file)
-        if ret == 0:
-            print('YAY WE DID THE THING')
+factory = DuetWebAPIFactory()
+factory.register_api('DWC', DWCAPI, '/rr_model')
+factory.register_api('DSF', DSFAPI, '/machine/status')
 
 
-riley = DuetWebAPI('http://riley')
-force_rig = DuetWebAPI('http://forcerig')
-force_rig.get_model()
-riley.get_model()
+riley = factory.get_api('http://riley')
+force_rig = factory.get_api('http://forcerig')
+force_rig.get_file('1001.gcode')
+riley.get_file('winder.gcode')
 pass
