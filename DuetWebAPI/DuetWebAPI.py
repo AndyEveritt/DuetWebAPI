@@ -12,7 +12,7 @@
 # Released under The MIT License. Full text available via https://opensource.org/licenses/MIT
 #
 # Requires Python3
-from typing import Dict
+from typing import Dict, List
 import requests
 import json
 import sys
@@ -86,15 +86,15 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return json.loads(r.text)
 
-    def get_file(self, filename: str, path: str = 'gcodes') -> str:
+    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
         """
         filename: name of the file you want to download including extension
-        path: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
 
         returns the file as a string
         """
         url = f'{self._base_url}/rr_download'
-        r = requests.get(url, {'name': f'/{path}/{filename}'})
+        r = requests.get(url, {'name': f'/{directory}/{filename}'})
         if not r.ok:
             raise ValueError
         return r.text
@@ -111,8 +111,12 @@ class DWCAPI(DuetAPI):
     def move_file(self, from_path, to_path, force=False):
         pass
 
-    def get_directory(self, directory):
-        pass
+    def get_directory(self, directory) -> List[Dict]:
+        url = f'{self._base_url}/rr_filelist'
+        r = requests.get(url, {'dir': f'/{directory}'})
+        if not r.ok:
+            raise ValueError
+        return json.loads(r.text)['files']
 
     def put_directory(self, directory):
         pass
@@ -130,14 +134,14 @@ class DSFAPI(DuetAPI):
         r = requests.post(url, data=code)
         return r.text
 
-    def get_file(self, filename, path='gcodes'):
+    def get_file(self, filename, directory):
         """
         filename: name of the file you want to download including extension
-        path: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
 
         returns the file as a string
         """
-        url = f'{self._base_url}/machine/file/{path}/{filename}'
+        url = f'{self._base_url}/machine/file/{directory}'
         r = requests.get(url)
         if not r.ok:
             raise ValueError
@@ -155,8 +159,12 @@ class DSFAPI(DuetAPI):
     def move_file(self, from_path, to_path, force=False):
         pass
 
-    def get_directory(self, directory):
-        pass
+    def get_directory(self, directory) -> List[Dict]:
+        url = f'{self._base_url}/machine/directory/{directory}'
+        r = requests.get(url)
+        if not r.ok:
+            raise ValueError
+        return json.loads(r.text)
 
     def put_directory(self, directory):
         pass
@@ -169,6 +177,6 @@ factory.register_api('DSF', DSFAPI, '/machine/status')
 
 riley = factory.get_api('http://riley')
 force_rig = factory.get_api('http://forcerig')
-force_rig.get_file('1001.gcode')
-riley.get_file('winder.gcode')
+force_rig.get_directory('sys')
+riley.get_directory('sys')
 pass
