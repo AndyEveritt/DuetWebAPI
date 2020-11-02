@@ -21,13 +21,16 @@ import logging
 
 
 class DuetWebAPIFactory:
-    def __init__(self):
+    def __init__(self) -> None:
         self._creators = {}
+    
+    def __call__(self, base_url: str) -> DuetAPI:
+        self.get_api(base_url)
 
-    def register_api(self, name: str, creator: object, url_suffix: str):
+    def register_api(self, name: str, creator: object, url_suffix: str) -> None:
         self._creators[name] = {'creator': creator, 'url_suffix': url_suffix}
 
-    def get_api(self, base_url):
+    def get_api(self, base_url) -> DuetAPI:
         for api in self._creators.values():
             url = base_url + api['url_suffix']
             r = requests.get(url, timeout=(2, 60))
@@ -35,7 +38,7 @@ class DuetWebAPIFactory:
                 creator = api['creator']
                 return creator(base_url)
 
-        self.logging.error(f'Can not get API for {self.base_url}')
+        self.logging.error(f'Can not get API for {base_url}')
         raise ValueError
 
 
@@ -217,13 +220,13 @@ class DSFAPI(DuetAPI):
         return r.text
 
 
-factory = DuetWebAPIFactory()
-factory.register_api('DWC', DWCAPI, '/rr_model')
-factory.register_api('DSF', DSFAPI, '/machine/status')
+DuetWebAPI = DuetWebAPIFactory()
+DuetWebAPI.register_api('DWC', DWCAPI, '/rr_model')
+DuetWebAPI.register_api('DSF', DSFAPI, '/machine/status')
 
 
-riley = factory.get_api('http://riley')
-force_rig = factory.get_api('http://forcerig')
+riley = DuetWebAPI('http://riley')
+force_rig = DuetWebAPI('http://forcerig')
 force_rig.put_file('test.gcode', 'test.gcode')
 riley.put_file('test.gcode', 'test.gcode')
 pass
