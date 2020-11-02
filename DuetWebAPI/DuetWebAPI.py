@@ -16,6 +16,7 @@ from typing import Dict, List
 import requests
 import json
 import sys
+import datetime
 import logging
 
 
@@ -76,7 +77,7 @@ class DWCAPI(DuetAPI):
         r = requests.get(url, {'flags': 'd99vn', 'key': key})
         if not r.ok:
             raise ValueError
-        j = json.loads(r.text)
+        j = r.json()
         return j['result']
 
     def post_code(self, code) -> Dict:
@@ -84,7 +85,7 @@ class DWCAPI(DuetAPI):
         r = requests.get(url, {'gcode': code})
         if not r.ok:
             raise ValueError
-        return json.loads(r.text)
+        return r.json()
 
     def get_file(self, filename: str, directory: str = 'gcodes') -> str:
         """
@@ -99,8 +100,13 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, filename):
-        pass
+    def put_file(self, file: str, duet_filename: str, directory: str = 'gcodes'):
+        url = f'{self._base_url}/rr_upload?name=/{directory}/{duet_filename}'
+        with open(file, 'rb') as f:
+            r = requests.post(url, data=f)
+        if not r.ok:
+            raise ValueError
+        return r.json()
 
     def get_fileinfo(self, filename):
         pass
@@ -116,7 +122,7 @@ class DWCAPI(DuetAPI):
         r = requests.get(url, {'dir': f'/{directory}'})
         if not r.ok:
             raise ValueError
-        return json.loads(r.text)['files']
+        return r.json()['files']
 
     def put_directory(self, directory):
         pass
@@ -126,7 +132,7 @@ class DSFAPI(DuetAPI):
     def get_model(self) -> Dict:
         url = f'{self._base_url}/machine/status'
         r = requests.get(url)
-        j = json.loads(r.text)
+        j = r.json()
         return j
 
     def post_code(self, code) -> str:
@@ -147,8 +153,14 @@ class DSFAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, filename):
-        pass
+    def put_file(self, file: str, duet_filename: str, directory: str = 'gcodes'):
+        # BUG this uploads an empty file
+        url = f'{self._base_url}/machine/file/{directory}/{duet_filename}'
+        with open(file, 'rb') as f:
+            r = requests.put(url, data=f)
+        if not r.ok:
+            raise ValueError
+        return r.ok
 
     def get_fileinfo(self, filename):
         pass
@@ -164,7 +176,7 @@ class DSFAPI(DuetAPI):
         r = requests.get(url)
         if not r.ok:
             raise ValueError
-        return json.loads(r.text)
+        return r.json()
 
     def put_directory(self, directory):
         pass
@@ -177,6 +189,6 @@ factory.register_api('DSF', DSFAPI, '/machine/status')
 
 riley = factory.get_api('http://riley')
 force_rig = factory.get_api('http://forcerig')
-force_rig.get_directory('sys')
-riley.get_directory('sys')
+force_rig.put_file('test.gcode', 'test.gcode')
+riley.put_file('test.gcode', 'test.gcode')
 pass
