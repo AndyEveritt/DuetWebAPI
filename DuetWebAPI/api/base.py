@@ -5,6 +5,8 @@ import logging
 
 
 class DuetAPI:
+    api_name = ''
+
     def __init__(self, base_url) -> None:
         self._base_url = base_url
 

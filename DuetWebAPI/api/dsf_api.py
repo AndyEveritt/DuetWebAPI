@@ -8,6 +8,14 @@ from .base import DuetAPI
 
 
 class DSFAPI(DuetAPI):
+    """
+    Duet Software Framework REST API Interface.
+
+    Used with a Duet 3 + SBC.
+    Must use RRF3.
+    """
+    api_name = 'DSF_REST'
+
     def get_model(self, **_ignored) -> Dict:
         url = f'{self._base_url}/machine/status'
         r = requests.get(url)

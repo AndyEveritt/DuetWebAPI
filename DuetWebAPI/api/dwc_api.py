@@ -8,6 +8,14 @@ from .base import DuetAPI
 
 
 class DWCAPI(DuetAPI):
+    """
+    Duet Web Control REST API Interface.
+
+    Used with a Duet 2/3 in standalone mode.
+    Must use RRF3.
+    """
+    api_name = 'DWC_REST'
+
     def get_model(self, key: str = None) -> Dict:
         url = f'{self._base_url}/rr_model'
         r = requests.get(url, {'flags': 'd99vn', 'key': key})

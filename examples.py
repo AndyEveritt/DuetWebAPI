@@ -7,7 +7,7 @@ import json
 
 riley = DWA('http://riley')
 force_rig = DWA('http://forcerig')
-
+force_rig.api_name
 force_rig.put_file('test.gcode')
 riley.put_file('test.gcode')
 pass
