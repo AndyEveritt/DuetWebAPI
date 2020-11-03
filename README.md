@@ -33,14 +33,14 @@ The REST API allows for the following operations:
 Method | Description
 ------ | -----------
 `get_model(key: str = None) -> Dict` | Get Duet object model. RRF3 only
-`post_code(code: str) -> Dict` | Send G/M/T-code to Duet
+`send_code(code: str) -> Dict` | Send G/M/T-code to Duet
 `get_file(filename: str, directory: str = 'gcodes') -> str` | Download file from Duet
-`put_file(file: str, directory: str = 'gcodes') -> Dict` | Upload file to Duet
+`upload_file(file: str, directory: str = 'gcodes') -> Dict` | Upload file to Duet
 `get_fileinfo(filename: str = None, directory: str = 'gcodes') -> Dict` | Get file info
 `delete_file(filename: str, directory: str = 'gcodes') -> Dict` | Delete file on Duet
 `move_file(from_path: str, to_path: str, force: bool = False) -> Dict` | Move file on Duet, can be used to rename files
 `get_directory(directory: str) -> List[Dict]` | Get a list of all the files & directories in a directory
-`put_directory(directory: str) -> Dict` | Create a new directory
+`create_directory(directory: str) -> Dict` | Create a new directory
 
 
 ## Wrapper
