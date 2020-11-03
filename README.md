@@ -21,6 +21,12 @@ pip install -e "git+https://github.com/AndyEveritt/DuetWebAPI.git@master#egg=due
 # Usage
 * See 'examples.py' for examples. 
 
+```python
+from duetwebapi import DuetWebAPI
+
+printer = DuetWebAPI(f'http://{printer_hostname})
+```
+
 ## REST API
 The REST API allows for the following operations:
 
