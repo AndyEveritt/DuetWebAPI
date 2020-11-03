@@ -9,7 +9,7 @@ Python interface to Duet RepRap V3 firmware via Http REST API.
   * Duet 2 standalone
 
 # Install
-* add `"git+https://github.com/AndyEveritt/DuetWebAPI.git@master#egg=duetwebapi"` to `requirements.txt`
+* add `-e "git+https://github.com/AndyEveritt/DuetWebAPI.git@master#egg=duetwebapi"` to `requirements.txt`
 * `pip install -r requirements.txt`
 
 # Usage
