@@ -17,17 +17,17 @@ from typing import Dict, List
 
 import requests
 
-from DuetWebAPI.api import DSFAPI, DWCAPI, DuetAPI
+from DuetWebAPI.api import DSFAPI, DWCAPI, DuetAPI, DuetAPIWrapper
 
 
 class DuetWebAPIFactory:
     def __init__(self) -> None:
         self._creators = {}
 
-    def __call__(self, base_url: str) -> DuetAPI:
-        api = self.get_api(base_url)
-        wrapper = self.create_wrapper(api)
-        return wrapper(base_url)
+    def __call__(self, base_url: str):
+        Api = self.get_api(base_url)
+        Wrapper = self.create_wrapper(Api)
+        return Wrapper(base_url)
 
     def register_api(self, name: str, creator: object, url_suffix: str) -> None:
         self._creators[name] = {'creator': creator, 'url_suffix': url_suffix}
@@ -47,43 +47,9 @@ class DuetWebAPIFactory:
         raise ValueError
 
     def create_wrapper(self, creator: DuetAPI):
-        class DuetAPIWrapper(creator):
-            def get_coords(self):
-                model = self.get_model()
-                axes = model['move']['axes']
-                ret = {}
-                for i in range(0, len(axes)):
-                    ret[axes[i]['letter']] = axes[i]['userPosition']
-                return(ret)
+        Wrapper = type('DuetWebAPI', (DuetAPIWrapper, creator), {})
 
-            def get_layer(self):
-                model = self.get_model()
-                layer = model['job']['layer']
-                if not layer:
-                    layer = 0
-                return(layer)
-
-            def get_num_extruders(self):
-                model = self.get_model()
-                extruders = model['move']['extruders']
-                return len(extruders)
-
-            def get_num_tools(self):
-                model = self.get_model()
-                tools = model['tools']
-                return len(tools)
-
-            def get_status(self):
-                model = self.get_model()
-                status = model['state']['status']
-                return status
-
-            def get_temperatures(self):
-                model = self.get_model()
-                sensors = model['sensors']['analog']
-                return sensors
-
-        return DuetAPIWrapper
+        return Wrapper
 
 
 DuetWebAPI = DuetWebAPIFactory()
