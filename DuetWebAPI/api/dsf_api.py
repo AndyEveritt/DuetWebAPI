@@ -8,16 +8,16 @@ from .base import DuetAPI
 
 
 class DSFAPI(DuetAPI):
-    def get_model(self) -> Dict:
+    def get_model(self, **_ignored) -> Dict:
         url = f'{self._base_url}/machine/status'
         r = requests.get(url)
         j = r.json()
         return j
 
-    def post_code(self, code) -> str:
+    def post_code(self, code: str) -> Dict:
         url = f'{self._base_url}/machine/code'
         r = requests.post(url, data=code)
-        return r.text
+        return {'response': r.text}
 
     def get_file(self, filename: str, directory: str = 'gcodes') -> str:
         """
@@ -32,7 +32,7 @@ class DSFAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, file: str, directory: str = 'gcodes'):
+    def put_file(self, file: str, directory: str = 'gcodes') -> Dict:
         """
         file: the path to the file you want to upload from your PC
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
@@ -46,39 +46,39 @@ class DSFAPI(DuetAPI):
             r = requests.put(url, data=f, headers={'Content-Type': 'application/octet-stream'})
         if not r.ok:
             raise ValueError
-        return r.ok
+        return {'err': 0}
 
-    def get_fileinfo(self, filename: str, directory: str = 'gcodes'):
+    def get_fileinfo(self, filename: str = None, directory: str = 'gcodes') -> Dict:
         url = f'{self._base_url}/machine/fileinfo/{directory}/{filename}'
         r = requests.get(url)
         if not r.ok:
             raise ValueError
         return r.json()
 
-    def delete_file(self, filename: str, directory: str = 'gcodes'):
+    def delete_file(self, filename: str, directory: str = 'gcodes') -> Dict:
         url = f'{self._base_url}/machine/file/{directory}/{filename}'
         r = requests.delete(url)
         if not r.ok:
             raise ValueError
-        return r.text
+        return {'err': 0}
 
-    def move_file(self, from_path, to_path, force=False):
+    def move_file(self, from_path: str, to_path: str, force: bool = False) -> Dict:
         url = f'{self._base_url}/machine/file/move'
         r = requests.post(url, {'from': f'{from_path}', 'to': f'{to_path}', 'force': force})
         if not r.ok:
             raise ValueError
-        return r.text
+        return {'err': 0}
 
-    def get_directory(self, directory) -> List[Dict]:
+    def get_directory(self, directory: str) -> List[Dict]:
         url = f'{self._base_url}/machine/directory/{directory}'
         r = requests.get(url)
         if not r.ok:
             raise ValueError
         return r.json()
 
-    def put_directory(self, directory):
+    def put_directory(self, directory: str) -> Dict:
         url = f'{self._base_url}/machine/directory/{directory}'
         r = requests.put(url)
         if not r.ok:
             raise ValueError
-        return r.text
+        return {'err': 0}
