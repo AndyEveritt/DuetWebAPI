@@ -24,7 +24,7 @@ riley.get_file('test.gcode')
 force_rig.get_file('test.gcode')
 
 riley.move_file('gcodes/test.gcode', 'gcodes/test2.gcode')
-force_rig.move_file('gcodes/test.gcode', 'gcodes/test2.gcode')
+# force_rig.move_file('gcodes/test.gcode', 'gcodes/test2.gcode')
 
 riley.delete_file('test2.gcode')
 force_rig.delete_file('test2.gcode')
