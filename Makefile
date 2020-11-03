@@ -15,3 +15,6 @@ check_dist:
 
 upload_test:
 	twine upload --repository testpypi dist/*-$(v)*
+
+upload:
+	twine upload dist/*-$(v)*
