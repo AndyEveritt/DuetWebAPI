@@ -12,21 +12,22 @@
 # Released under The MIT License. Full text available via https://opensource.org/licenses/MIT
 #
 # Requires Python3
-from typing import Dict, List
-import requests
-import os
-import json
-import sys
-import datetime
 import logging
+from typing import Dict, List
+
+import requests
+
+from DuetWebAPI.api import DSFAPI, DWCAPI, DuetAPI
 
 
 class DuetWebAPIFactory:
     def __init__(self) -> None:
         self._creators = {}
-    
+
     def __call__(self, base_url: str) -> DuetAPI:
-        self.get_api(base_url)
+        api = self.get_api(base_url)
+        wrapper = self.create_wrapper(api)
+        return wrapper(base_url)
 
     def register_api(self, name: str, creator: object, url_suffix: str) -> None:
         self._creators[name] = {'creator': creator, 'url_suffix': url_suffix}
@@ -40,206 +41,19 @@ class DuetWebAPIFactory:
                 continue
             if r.ok:
                 creator = api['creator']
-                return creator(base_url)
+                return creator
 
         logging.error(f'Can not get API for {base_url}')
         raise ValueError
 
+    def create_wrapper(self, creator: DuetAPI):
+        class DuetAPIWrapper(creator):
+            def demo(self):
+                print('test')
 
-class DuetAPI:
-    def __init__(self, base_url) -> None:
-        self._base_url = base_url
-
-    def get_model(self):
-        raise NotImplementedError
-
-    def post_code(self, code):
-        raise NotImplementedError
-
-    def get_file(self, filename, path):
-        raise NotImplementedError
-
-    def put_file(self, filename, path):
-        raise NotImplementedError
-
-    def get_fileinfo(self, filename):
-        raise NotImplementedError
-
-    def delete_file(self, filename):
-        raise NotImplementedError
-
-    def move_file(self, from_path, to_path, force=False):
-        raise NotImplementedError
-
-    def get_directory(self, directory):
-        raise NotImplementedError
-
-    def put_directory(self, directory):
-        raise NotImplementedError
-
-
-class DWCAPI(DuetAPI):
-    def get_model(self, key=None) -> Dict:
-        url = f'{self._base_url}/rr_model'
-        r = requests.get(url, {'flags': 'd99vn', 'key': key})
-        if not r.ok:
-            raise ValueError
-        j = r.json()
-        return j['result']
-
-    def post_code(self, code) -> Dict:
-        url = f'{self._base_url}/rr_gcode'
-        r = requests.get(url, {'gcode': code})
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
-        """
-        filename: name of the file you want to download including extension
-        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
-
-        returns the file as a string
-        """
-        url = f'{self._base_url}/rr_download'
-        r = requests.get(url, {'name': f'/{directory}/{filename}'})
-        if not r.ok:
-            raise ValueError
-        return r.text
-
-    def put_file(self, file: str, directory: str = 'gcodes'):
-        file = os.path.abspath(file).replace('\\', '/')
-        filename = file.split('/')[-1]
-        url = f'{self._base_url}/rr_upload?name=/{directory}/{filename}'
-        with open(file, 'rb') as f:
-            r = requests.post(url, data=f)
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def get_fileinfo(self, filename: str = None, directory: str = 'gcodes'):
-        url = f'{self._base_url}/rr_fileinfo'
-        if filename:
-            r = requests.get(url, {'name': f'/{directory}/{filename}'})
-        else:
-            r = requests.get(url)
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def delete_file(self, filename: str, directory: str = 'gcodes'):
-        url = f'{self._base_url}/rr_delete'
-        r = requests.get(url, {'name': f'/{directory}/{filename}'})
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def move_file(self, from_path, to_path, **_ignored):
-        url = f'{self._base_url}/rr_move'
-        r = requests.get(url, {'old': f'{from_path}', 'new': f'{to_path}'})
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def get_directory(self, directory) -> List[Dict]:
-        url = f'{self._base_url}/rr_filelist'
-        r = requests.get(url, {'dir': f'/{directory}'})
-        if not r.ok:
-            raise ValueError
-        return r.json()['files']
-
-    def put_directory(self, directory):
-        url = f'{self._base_url}/rr_mkdir'
-        r = requests.get(url, {'dir': f'/{directory}'})
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-
-class DSFAPI(DuetAPI):
-    def get_model(self) -> Dict:
-        url = f'{self._base_url}/machine/status'
-        r = requests.get(url)
-        j = r.json()
-        return j
-
-    def post_code(self, code) -> str:
-        url = f'{self._base_url}/machine/code'
-        r = requests.post(url, data=code)
-        return r.text
-
-    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
-        """
-        filename: name of the file you want to download including extension
-        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
-
-        returns the file as a string
-        """
-        url = f'{self._base_url}/machine/file/{directory}/{filename}'
-        r = requests.get(url)
-        if not r.ok:
-            raise ValueError
-        return r.text
-
-    def put_file(self, file: str, directory: str = 'gcodes'):
-        """
-        file: the path to the file you want to upload from your PC
-        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
-
-        returns the file as a string
-        """
-        file = os.path.abspath(file).replace('\\', '/')
-        filename = file.split('/')[-1]
-        url = f'{self._base_url}/machine/file/{directory}/{filename}'
-        with open(file, 'rb') as f:
-            r = requests.put(url, data=f, headers={'Content-Type': 'application/octet-stream'})
-        if not r.ok:
-            raise ValueError
-        return r.ok
-
-    def get_fileinfo(self, filename: str, directory: str = 'gcodes'):
-        url = f'{self._base_url}/machine/fileinfo/{directory}/{filename}'
-        r = requests.get(url)
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def delete_file(self, filename: str, directory: str = 'gcodes'):
-        url = f'{self._base_url}/machine/file/{directory}/{filename}'
-        r = requests.delete(url)
-        if not r.ok:
-            raise ValueError
-        return r.text
-
-    def move_file(self, from_path, to_path, force=False):
-        url = f'{self._base_url}/machine/file/move'
-        r = requests.post(url, {'from': f'{from_path}', 'to': f'{to_path}', 'force': force})
-        if not r.ok:
-            raise ValueError
-        return r.text
-
-    def get_directory(self, directory) -> List[Dict]:
-        url = f'{self._base_url}/machine/directory/{directory}'
-        r = requests.get(url)
-        if not r.ok:
-            raise ValueError
-        return r.json()
-
-    def put_directory(self, directory):
-        url = f'{self._base_url}/machine/directory/{directory}'
-        r = requests.put(url)
-        if not r.ok:
-            raise ValueError
-        return r.text
+        return DuetAPIWrapper
 
 
 DuetWebAPI = DuetWebAPIFactory()
 DuetWebAPI.register_api('DWC', DWCAPI, '/rr_model')
 DuetWebAPI.register_api('DSF', DSFAPI, '/machine/status')
-
-
-riley = DuetWebAPI('http://riley')
-force_rig = DuetWebAPI('http://forcerig')
-force_rig.put_file('test.gcode')
-riley.put_file('test.gcode')
-pass
