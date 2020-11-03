@@ -1,23 +1,20 @@
 # Python Script containing a class to send commands to, and query specific information from,
-#   Duet based printers running either Duet RepRap V2 or V3 firmware.
+#   Duet based printers running Duet RepRap V3 firmware.
 #
 # Does NOT hold open the connection.  Use for low-volume requests.
 # Does NOT, at this time, support Duet passwords.
 #
-# Not intended to be a gerneral purpose interface; instead, it contains methods
-# to issue commands or return specific information. Feel free to extend with new
-# methods for other information; please keep the abstraction for V2 V3
-#
-# Copyright (C) 2020 Danal Estes all rights reserved.
+# Copyright (C) 2020 Andy Everitt all rights reserved.
 # Released under The MIT License. Full text available via https://opensource.org/licenses/MIT
 #
 # Requires Python3
+
 import logging
 from typing import Dict, List
 
 import requests
 
-from DuetWebAPI.api import DSFAPI, DWCAPI, DuetAPI, DuetAPIWrapper
+from .api import DSFAPI, DWCAPI, DuetAPI, DuetAPIWrapper
 
 
 class DuetWebAPIFactory:
