@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="duetwebapi",
-    version="1.0.0",
+    version="1.0.1-dev0",
     include_package_data=True,
     packages=find_packages(),
 
