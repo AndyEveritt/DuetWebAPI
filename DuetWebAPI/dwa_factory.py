@@ -53,5 +53,5 @@ class DuetWebAPIFactory:
 
 
 DuetWebAPI = DuetWebAPIFactory()
-DuetWebAPI.register_api('DWC', DWCAPI, '/rr_model')
-DuetWebAPI.register_api('DSF', DSFAPI, '/machine/status')
+DuetWebAPI.register_api(DWCAPI.api_name, DWCAPI, '/rr_model')
+DuetWebAPI.register_api(DSFAPI.api_name, DSFAPI, '/machine/status')
