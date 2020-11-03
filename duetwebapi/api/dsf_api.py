@@ -22,7 +22,7 @@ class DSFAPI(DuetAPI):
         j = r.json()
         return j
 
-    def post_code(self, code: str) -> Dict:
+    def send_code(self, code: str) -> Dict:
         url = f'{self._base_url}/machine/code'
         r = requests.post(url, data=code)
         return {'response': r.text}
@@ -40,7 +40,7 @@ class DSFAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, file: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: str, directory: str = 'gcodes') -> Dict:
         """
         file: the path to the file you want to upload from your PC
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
@@ -84,7 +84,7 @@ class DSFAPI(DuetAPI):
             raise ValueError
         return r.json()
 
-    def put_directory(self, directory: str) -> Dict:
+    def create_directory(self, directory: str) -> Dict:
         url = f'{self._base_url}/machine/directory/{directory}'
         r = requests.put(url)
         if not r.ok:

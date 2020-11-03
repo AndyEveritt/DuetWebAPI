@@ -14,11 +14,11 @@ bruce = DWA('http://bruce')
 riley.get_model()
 bruce.get_model()
 
-riley.post_code('M115')
-bruce.post_code('M115')
+riley.send_code('M115')
+bruce.send_code('M115')
 
-riley.put_file('test.gcode')
-bruce.put_file('test.gcode')
+riley.upload_file('test.gcode')
+bruce.upload_file('test.gcode')
 
 riley.get_file('test.gcode')
 bruce.get_file('test.gcode')

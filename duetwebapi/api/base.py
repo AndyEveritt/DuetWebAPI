@@ -14,7 +14,7 @@ class DuetAPI:
         """ Get Duet object model. RRF3 only """
         raise NotImplementedError
 
-    def post_code(self, code: str) -> Dict:
+    def send_code(self, code: str) -> Dict:
         """ Send G/M/T-code to Duet """
         raise NotImplementedError
 
@@ -22,7 +22,7 @@ class DuetAPI:
         """ Get file from Duet """
         raise NotImplementedError
 
-    def put_file(self, file: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: str, directory: str = 'gcodes') -> Dict:
         """ Upload file to Duet """
         raise NotImplementedError
 
@@ -42,6 +42,6 @@ class DuetAPI:
         """ Get a list of all the files & directories in a directory """
         raise NotImplementedError
 
-    def put_directory(self, directory: str) -> Dict:
+    def create_directory(self, directory: str) -> Dict:
         """ Create a new directory """
         raise NotImplementedError

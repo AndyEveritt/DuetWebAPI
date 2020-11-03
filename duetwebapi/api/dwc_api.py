@@ -24,7 +24,7 @@ class DWCAPI(DuetAPI):
         j = r.json()
         return j['result']
 
-    def post_code(self, code: str) -> Dict:
+    def send_code(self, code: str) -> Dict:
         url = f'{self._base_url}/rr_gcode'
         r = requests.get(url, {'gcode': code})
         if not r.ok:
@@ -44,7 +44,7 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, file: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: str, directory: str = 'gcodes') -> Dict:
         file = os.path.abspath(file).replace('\\', '/')
         filename = file.split('/')[-1]
         url = f'{self._base_url}/rr_upload?name=/{directory}/{filename}'
@@ -87,7 +87,7 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return r.json()['files']
 
-    def put_directory(self, directory: str) -> Dict:
+    def create_directory(self, directory: str) -> Dict:
         url = f'{self._base_url}/rr_mkdir'
         r = requests.get(url, {'dir': f'/{directory}'})
         if not r.ok:
