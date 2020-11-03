@@ -1,6 +1,12 @@
 SHELL := /bin/bash
 verbosity=1
 
+#########################################
+# bumpversion Usage
+#########################################
+# `bumpversion [major|minor|patch|build]`
+# `bumpversion --tag release
+
 update_dist:
 	python setup.py sdist bdist_wheel
 
