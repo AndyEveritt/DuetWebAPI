@@ -1,1 +1,1 @@
-from .DuetWebAPI import DuetWebAPI
+from .dwa_factory import DuetWebAPI

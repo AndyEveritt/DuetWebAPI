@@ -1,3 +1,3 @@
 from .base import DuetAPI
-from .dsfapi import DSFAPI
-from .dwcapi import DWCAPI
+from .dsf_api import DSFAPI
+from .dwc_api import DWCAPI
