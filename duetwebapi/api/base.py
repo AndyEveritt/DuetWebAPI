@@ -7,8 +7,13 @@ import logging
 class DuetAPI:
     api_name = ''
 
-    def __init__(self, base_url) -> None:
+    def __init__(self, base_url: str) -> None:
+        if not base_url.startswith('http://'):
+            base_url = f'http://{base_url}'
         self._base_url = base_url
+
+    def base_url(self):
+        return self._base_url
 
     def get_model(self, key: str = None) -> Dict:
         """ Get Duet object model. RRF3 only """
@@ -45,3 +50,5 @@ class DuetAPI:
     def create_directory(self, directory: str) -> Dict:
         """ Create a new directory """
         raise NotImplementedError
+
+pass
