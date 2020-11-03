@@ -14,6 +14,7 @@
 # Requires Python3
 from typing import Dict, List
 import requests
+import os
 import json
 import sys
 import datetime
@@ -30,12 +31,15 @@ class DuetWebAPIFactory:
     def get_api(self, base_url):
         for api in self._creators.values():
             url = base_url + api['url_suffix']
-            r = requests.get(url, timeout=(2, 60))
+            try:
+                r = requests.get(url, timeout=(2, 60))
+            except requests.exceptions.ConnectionError:
+                continue
             if r.ok:
                 creator = api['creator']
                 return creator(base_url)
 
-        self.logging.error(f'Can not get API for {self.base_url}')
+        logging.error(f'Can not get API for {base_url}')
         raise ValueError
 
 
@@ -100,8 +104,10 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, file: str, duet_filename: str, directory: str = 'gcodes'):
-        url = f'{self._base_url}/rr_upload?name=/{directory}/{duet_filename}'
+    def put_file(self, file: str, directory: str = 'gcodes'):
+        file = os.path.abspath(file).replace('\\', '/')
+        filename = file.split('/')[-1]
+        url = f'{self._base_url}/rr_upload?name=/{directory}/{filename}'
         with open(file, 'rb') as f:
             r = requests.post(url, data=f)
         if not r.ok:
@@ -153,11 +159,18 @@ class DSFAPI(DuetAPI):
             raise ValueError
         return r.text
 
-    def put_file(self, file: str, duet_filename: str, directory: str = 'gcodes'):
-        # BUG this uploads an empty file
-        url = f'{self._base_url}/machine/file/{directory}/{duet_filename}'
+    def put_file(self, file: str, directory: str = 'gcodes'):
+        """
+        file: the path to the file you want to upload from your PC
+        directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+
+        returns the file as a string
+        """
+        file = os.path.abspath(file).replace('\\', '/')
+        filename = file.split('/')[-1]
+        url = f'{self._base_url}/machine/file/{directory}/{filename}'
         with open(file, 'rb') as f:
-            r = requests.put(url, data=f)
+            r = requests.put(url, data=f, headers={'Content-Type': 'application/octet-stream'})
         if not r.ok:
             raise ValueError
         return r.ok
@@ -189,6 +202,6 @@ factory.register_api('DSF', DSFAPI, '/machine/status')
 
 riley = factory.get_api('http://riley')
 force_rig = factory.get_api('http://forcerig')
-force_rig.put_file('test.gcode', 'test.gcode')
-riley.put_file('test.gcode', 'test.gcode')
+force_rig.put_file('test.gcode')
+riley.put_file('test.gcode')
 pass
