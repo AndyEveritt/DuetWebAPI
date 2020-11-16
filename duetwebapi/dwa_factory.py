@@ -31,6 +31,8 @@ class DuetWebAPIFactory:
 
     def get_api(self, base_url) -> DuetAPI:
         for api in self._creators.values():
+            if not base_url.startswith('http://'):
+                base_url = f'http://{base_url}'
             url = base_url + api['url_suffix']
             try:
                 r = requests.get(url, timeout=(2, 60))

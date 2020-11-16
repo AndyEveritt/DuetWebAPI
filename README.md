@@ -24,7 +24,7 @@ pip install -e "git+https://github.com/AndyEveritt/DuetWebAPI.git@master#egg=due
 ```python
 from duetwebapi import DuetWebAPI
 
-printer = DuetWebAPI(f'http://{printer_hostname})
+printer = DuetWebAPI(f'http://{printer_hostname}')
 ```
 
 ## REST API
@@ -48,9 +48,16 @@ An additional wrapper is provided to make repetative tasks easier
 
 Method | Description
 ------ | -----------
-`get_coords()` | return the current position of all the movement axes
-`get_layer()` | return the current layer number of the print
-`get_num_extruders()` | return the number of extruders currently configured
-`get_num_tools()` | return the number of tools currently configured
-`get_status()` | return the current Duet status
-`get_temperature()` | return a list of all the analog sensors and their value
+`emergency_stop() -> None` | Send M112 > M999
+`start_print(filename: str) -> Dict` | start a print on duet
+`pause_print() -> Dict` | pause current print
+`stop_print(leave_heaters: bool) -> Dict` | stop current print, will pause first if not paused
+`get_coords() -> Dict` | return the current position of all the movement axes
+`get_layer() -> int` | return the current layer number of the print
+`get_num_extruders() -> int` | return the number of extruders currently configured
+`get_num_tools() -> int` | return the number of tools currently configured
+`get_status() -> str` | return the current Duet status
+`get_temperature() -> List[Dict]` | return a list of all the analog sensors and their value
+`get_current_tool() -> int` | return the current tool number
+`get_messagebox() -> Dict` | return the details of a message displayed via `M291` if one exists
+`acknowledge_message(response: int) -> Dict` | send an acknowledgement to a message if one exists. Response options are `0` (continue), and `1` (cancel) 
