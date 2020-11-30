@@ -19,8 +19,9 @@ class DSFAPI(DuetAPI):
     def get_model(self, **_ignored) -> Dict:
         url = f'{self._base_url}/machine/status'
         r = requests.get(url)
-        j = r.json()
-        return j
+        j: Dict = r.json()
+        result = j['result'] if j.get('result') else j
+        return result
 
     def send_code(self, code: str) -> Dict:
         url = f'{self._base_url}/machine/code'
