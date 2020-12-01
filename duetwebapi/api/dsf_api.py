@@ -19,6 +19,8 @@ class DSFAPI(DuetAPI):
     def get_model(self, **_ignored) -> Dict:
         url = f'{self._base_url}/machine/status'
         r = requests.get(url)
+        if not r.ok:
+            raise ValueError
         j: Dict = r.json()
         result = j['result'] if j.get('result') else j
         return result
