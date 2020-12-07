@@ -17,8 +17,9 @@ bruce.get_model()
 riley.send_code('M115')
 bruce.send_code('M115')
 
-riley.upload_file('test.gcode')
-bruce.upload_file('test.gcode')
+with open('test.gcode', 'r') as f:
+    riley.upload_file(f, 'test.gcode')
+    bruce.upload_file(f, 'test.gcode')
 
 riley.get_file('test.gcode')
 bruce.get_file('test.gcode')

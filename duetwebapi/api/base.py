@@ -1,4 +1,5 @@
-from typing import Dict, List
+from typing import Dict, List, Union
+from io import StringIO, TextIOWrapper
 import requests
 import os
 import logging
@@ -8,12 +9,17 @@ class DuetAPI:
     api_name = ''
 
     def __init__(self, base_url: str) -> None:
-        if not base_url.startswith('http://'):
-            base_url = f'http://{base_url}'
-        self._base_url = base_url
+        self.base_url = base_url
 
+    @property
     def base_url(self):
         return self._base_url
+
+    @base_url.setter
+    def base_url(self, value: str):
+        if not value.startswith('http://'):
+            value = f'http://{value}'
+        self._base_url = base_url
 
     def get_model(self, key: str = None) -> Dict:
         """ Get Duet object model. RRF3 only """
@@ -27,7 +33,7 @@ class DuetAPI:
         """ Get file from Duet """
         raise NotImplementedError
 
-    def upload_file(self, file: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[StringIO, TextIOWrapper], filename: str, directory: str = 'gcodes') -> Dict:
         """ Upload file to Duet """
         raise NotImplementedError
 
@@ -50,5 +56,3 @@ class DuetAPI:
     def create_directory(self, directory: str) -> Dict:
         """ Create a new directory """
         raise NotImplementedError
-
-pass

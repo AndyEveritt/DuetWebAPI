@@ -8,7 +8,7 @@ verbosity=1
 # `bumpversion --tag release
 
 update_dist:
-	rm dist/*
+	rm dist/* -f
 	python setup.py sdist bdist_wheel
 
 check_dist:
