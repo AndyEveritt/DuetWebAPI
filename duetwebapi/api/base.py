@@ -19,7 +19,7 @@ class DuetAPI:
     def base_url(self, value: str):
         if not value.startswith('http://'):
             value = f'http://{value}'
-        self._base_url = base_url
+        self._base_url = value
 
     def get_model(self, key: str = None) -> Dict:
         """ Get Duet object model. RRF3 only """
