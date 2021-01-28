@@ -21,6 +21,14 @@ class DuetAPI:
             value = f'http://{value}'
         self._base_url = value
 
+    def connect(self, **kwargs):
+        """ Start connection to Duet """
+        raise NotImplementedError
+
+    def disconnect(self):
+        """ End connection to Duet """
+        raise NotImplementedError
+
     def get_model(self, key: str = None) -> Dict:
         """ Get Duet object model. RRF3 only """
         raise NotImplementedError

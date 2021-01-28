@@ -17,6 +17,22 @@ class DWCAPI(DuetAPI):
     """
     api_name = 'DWC_REST'
 
+    def connect(self, password=''):
+        """ Start connection to Duet """
+        url = f'{self.base_url}/rr_connect'
+        r = requests.get(url, {'password': password})
+        if not r.ok:
+            raise ValueError
+        return r.json()
+
+    def disconnect(self):
+        """ End connection to Duet """
+        url = f'{self.base_url}/rr_disconnect'
+        r = requests.get(url)
+        if not r.ok:
+            raise ValueError
+        return r.json()
+
     def get_model(self, key: str = None) -> Dict:
         url = f'{self.base_url}/rr_model'
         r = requests.get(url, {'flags': 'd99vn', 'key': key})
@@ -25,12 +41,20 @@ class DWCAPI(DuetAPI):
         j = r.json()
         return j['result']
 
+    def _get_reply(self) -> Dict:
+        url = f'{self.base_url}/rr_reply'
+        r = requests.get(url)
+        if not r.ok:
+            raise ValueError
+        return r.text
+
     def send_code(self, code: str) -> Dict:
         url = f'{self.base_url}/rr_gcode'
         r = requests.get(url, {'gcode': code})
         if not r.ok:
             raise ValueError
-        return {'response': ''}
+        reply = self._get_reply()
+        return {'response': reply}
 
     def get_file(self, filename: str, directory: str = 'gcodes') -> str:
         """
