@@ -1,3 +1,3 @@
-__version__ = "1.1.2-b5"
+__version__ = "1.1.2"
 
 from .dwa_factory import DuetWebAPI
