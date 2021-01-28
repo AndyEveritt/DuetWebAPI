@@ -1,5 +1,6 @@
 autopep8==1.5.4
 bleach==3.2.1
+bumpversion
 certifi==2020.6.20
 chardet==3.0.4
 colorama==0.4.4
@@ -22,3 +23,4 @@ tqdm==4.51.0
 twine==3.2.0
 urllib3==1.25.11
 webencodings==0.5.1
+wheel
