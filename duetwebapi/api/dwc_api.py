@@ -56,20 +56,24 @@ class DWCAPI(DuetAPI):
         reply = self._get_reply()
         return {'response': reply}
 
-    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
+    def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """
         filename: name of the file you want to download including extension
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+        binary: return binary data instead of a string
 
-        returns the file as a string
+        returns the file as a string or binary data
         """
         url = f'{self.base_url}/rr_download'
         r = requests.get(url, {'name': f'/{directory}/{filename}'})
         if not r.ok:
             raise ValueError
-        return r.text
+        if binary:
+            return r.content
+        else:
+            return r.text
 
-    def upload_file(self, file: Union[StringIO, TextIOWrapper], filename: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[StringIO, TextIOWrapper, bytes], filename: str, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/rr_upload?name=/{directory}/{filename}'
         r = requests.post(url, data=file)
         if not r.ok:
