@@ -11,6 +11,9 @@ class DuetAPI:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
 
+    def __repr__(self):
+        return f"DuetWebAPI('{self.base_url}') - {self.api_name}"
+
     @property
     def base_url(self):
         return self._base_url
