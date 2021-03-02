@@ -28,25 +28,27 @@ class DSFAPI(DuetAPI):
         r = requests.post(url, data=code)
         return {'response': r.text}
 
-    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
+    def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """
         filename: name of the file you want to download including extension
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
+        binary: return binary data instead of a string
 
-        returns the file as a string
+        returns the file as a string or binary data
         """
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
         r = requests.get(url)
         if not r.ok:
             raise ValueError
-        return r.text
+        if binary:
+            return r.content
+        else:
+            return r.text
 
-    def upload_file(self, file: Union[StringIO, TextIOWrapper], filename: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[str, bytes, StringIO, TextIOWrapper, BytesIO], filename: str, directory: str = 'gcodes') -> Dict:
         """
         file: the path to the file you want to upload from your PC
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
-
-        returns the file as a string
         """
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
         r = requests.put(url, data=file, headers={'Content-Type': 'application/octet-stream'})

@@ -37,11 +37,11 @@ class DuetAPI:
         """ Send G/M/T-code to Duet """
         raise NotImplementedError
 
-    def get_file(self, filename: str, directory: str = 'gcodes') -> str:
+    def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """ Get file from Duet """
         raise NotImplementedError
 
-    def upload_file(self, file: Union[StringIO, TextIOWrapper], filename: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[str, bytes, StringIO, TextIOWrapper, BytesIO], filename: str, directory: str = 'gcodes') -> Dict:
         """ Upload file to Duet """
         raise NotImplementedError
 
