@@ -34,8 +34,8 @@ Method | Description
 ------ | -----------
 `get_model(key: str = None) -> Dict` | Get Duet object model. RRF3 only
 `send_code(code: str) -> Dict` | Send G/M/T-code to Duet
-`get_file(filename: str, directory: str = 'gcodes') -> str` | Download file from Duet
-`upload_file(file: StringIO \| TextIOWrapper, filename: str, directory: str = 'gcodes') -> Dict` | Upload file to Duet
+`get_file(filename: str, directory: str = 'gcodes', binary: bool = False) -> str` | Download file from Duet
+`upload_file(file: str \| bytes \| StringIO \| TextIOWrapper \| BytesIO, filename: str, directory: str = 'gcodes') -> Dict` | Upload file to Duet
 `get_fileinfo(filename: str = None, directory: str = 'gcodes') -> Dict` | Get file info
 `delete_file(filename: str, directory: str = 'gcodes') -> Dict` | Delete file on Duet
 `move_file(from_path: str, to_path: str, force: bool = False) -> Dict` | Move file on Duet, can be used to rename files

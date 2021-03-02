@@ -73,7 +73,7 @@ class DWCAPI(DuetAPI):
         else:
             return r.text
 
-    def upload_file(self, file: Union[StringIO, TextIOWrapper, bytes], filename: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[str, bytes, StringIO, TextIOWrapper, BytesIO], filename: str, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/rr_upload?name=/{directory}/{filename}'
         r = requests.post(url, data=file)
         if not r.ok:

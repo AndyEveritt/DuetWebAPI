@@ -45,12 +45,10 @@ class DSFAPI(DuetAPI):
         else:
             return r.text
 
-    def upload_file(self, file: Union[StringIO, TextIOWrapper, bytes], filename: str, directory: str = 'gcodes') -> Dict:
+    def upload_file(self, file: Union[str, bytes, StringIO, TextIOWrapper, BytesIO], filename: str, directory: str = 'gcodes') -> Dict:
         """
         file: the path to the file you want to upload from your PC
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
-
-        returns the file as a string
         """
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
         r = requests.put(url, data=file, headers={'Content-Type': 'application/octet-stream'})
