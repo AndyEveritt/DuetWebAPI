@@ -1,8 +1,10 @@
 import logging
 import os
 from typing import Dict, List, Union
-from io import StringIO, TextIOWrapper
+from io import StringIO, TextIOWrapper, BytesIO
+from functools import reduce
 
+import operator
 import requests
 
 from .base import DuetAPI
@@ -17,10 +19,13 @@ class DSFAPI(DuetAPI):
     """
     api_name = 'DSF_REST'
 
-    def get_model(self, **_ignored) -> Dict:
+    def get_model(self, key: str = None) -> Dict:
         url = f'{self.base_url}/machine/status'
         r = requests.get(url)
         j = r.json()
+        if key is not None:
+            keys = key.split('.')
+            return reduce(operator.getitem, keys, j)
         return j
 
     def send_code(self, code: str) -> Dict:

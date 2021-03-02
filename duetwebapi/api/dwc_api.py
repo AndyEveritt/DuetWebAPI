@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Dict, List, Union
-from io import StringIO, TextIOWrapper
+from io import StringIO, TextIOWrapper, BytesIO
 
 import requests
 
