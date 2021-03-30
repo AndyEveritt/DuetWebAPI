@@ -10,7 +10,7 @@ keyring==21.4.0
 packaging==20.4
 pkginfo==1.6.1
 pycodestyle==2.6.0
-Pygments==2.7.2
+Pygments==2.7.4
 pyparsing==2.4.7
 pywin32-ctypes==0.2.0
 readme-renderer==28.0
