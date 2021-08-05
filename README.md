@@ -32,7 +32,9 @@ The REST API allows for the following operations:
 
 Method | Description
 ------ | -----------
-`get_model(key: str = None) -> Dict` | Get Duet object model. RRF3 only
+`connect(password: str = '') -> Dict` | Start a connection with Duet. DWC api only
+`disconnect() -> Dict` | End a connection with Duet. DWC api only
+`get_model(key: str = None, depth: int = 99, verbose: bool = True, null: bool = True, frequent: bool = False, obsolete: bool = False) -> Dict` | Get Duet object model. RRF3 only. Flags only supported in DWC api.
 `send_code(code: str) -> Dict` | Send G/M/T-code to Duet
 `get_file(filename: str, directory: str = 'gcodes', binary: bool = False) -> str` | Download file from Duet
 `upload_file(file: str \| bytes \| StringIO \| TextIOWrapper \| BytesIO, filename: str, directory: str = 'gcodes') -> Dict` | Upload file to Duet

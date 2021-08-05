@@ -32,7 +32,7 @@ class DuetAPI:
         """ End connection to Duet """
         raise NotImplementedError
 
-    def get_model(self, key: str = None) -> Dict:
+    def get_model(self, key: str = None, **kwargs) -> Dict:
         """ Get Duet object model. RRF3 only """
         raise NotImplementedError
 

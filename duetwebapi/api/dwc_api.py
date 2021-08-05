@@ -33,9 +33,14 @@ class DWCAPI(DuetAPI):
             raise ValueError
         return r.json()
 
-    def get_model(self, key: str = None) -> Dict:
+    def get_model(self, key: str = None, depth: int = 99, verbose: bool = True, null: bool = True, frequent: bool = False, obsolete: bool = False) -> Dict:
         url = f'{self.base_url}/rr_model'
-        r = requests.get(url, {'flags': 'd99vn', 'key': key})
+        flags = f'd{depth}'
+        flags += 'v' if verbose is True else ''
+        flags += 'n' if null is True else ''
+        flags += 'f' if frequent is True else ''
+        flags += 'o' if obsolete is True else ''
+        r = requests.get(url, {'flags': flags, 'key': key})
         if not r.ok:
             raise ValueError
         j = r.json()

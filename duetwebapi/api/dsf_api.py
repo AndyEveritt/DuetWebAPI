@@ -19,7 +19,14 @@ class DSFAPI(DuetAPI):
     """
     api_name = 'DSF_REST'
 
-    def get_model(self, key: str = None) -> Dict:
+    def get_model(self, key: str = None, **kwargs) -> Dict:
+        if 'depth' in kwargs:
+            print('depth kwarg not supported by DSF REST API')
+        if 'verbose' in kwargs:
+            print('verbose kwarg not supported by DSF REST API')
+        if 'null' in kwargs:
+            print('null kwarg not supported by DSF REST API')
+
         url = f'{self.base_url}/machine/status'
         r = requests.get(url)
         j = r.json()
