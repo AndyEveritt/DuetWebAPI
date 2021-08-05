@@ -28,48 +28,40 @@ class DuetAPIWrapper(DuetAPI):
         return self.send_code(code)
 
     def get_coords(self) -> Dict:
-        model = self.get_model()
-        axes = model['move']['axes']
+        axes = self.get_model(key='move.axes', verbose=False)
         ret = {}
         for i in range(0, len(axes)):
             ret[axes[i]['letter']] = axes[i]['userPosition']
         return(ret)
 
     def get_layer(self) -> int:
-        model = self.get_model()
-        layer = model['job']['layer']
+        layer = self.get_model(key='job.layer', verbose=False)
         if not layer:
             layer = 0
         return(layer)
 
     def get_num_extruders(self) -> int:
-        model = self.get_model()
-        extruders = model['move']['extruders']
+        extruders = self.get_model(key='move.extruders', verbose=False, depth=2)
         return len(extruders)
 
     def get_num_tools(self) -> int:
-        model = self.get_model()
-        tools = model['tools']
+        tools = self.get_model(key='tools', verbose=False, depth=1)
         return len(tools)
 
     def get_status(self) -> str:
-        model = self.get_model()
-        status = model['state']['status']
+        status = self.get_model(key='state.status')
         return status
 
     def get_temperatures(self) -> List[Dict]:
-        model = self.get_model()
-        sensors = model['sensors']['analog']
+        sensors = self.get_model(key='sensors.analog')
         return sensors
 
     def get_current_tool(self) -> int:
-        model = self.get_model()
-        tool = model['state']['currentTool']
+        tool = self.get_model(key='state.currentTool', verbose=False)
         return tool
 
     def get_messagebox(self) -> Dict:
-        model = self.get_model()
-        messagebox = model['state']['messageBox']
+        messagebox = self.get_model(key='state.messageBox')
         return messagebox
 
     def acknowledge_message(self, response: int = 0) -> Dict:
