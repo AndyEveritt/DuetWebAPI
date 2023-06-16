@@ -10,6 +10,7 @@
 # Requires Python3
 
 import logging
+from collections import OrderedDict
 from typing import Dict, List
 
 import requests
@@ -19,7 +20,7 @@ from .api import DSFAPI, DWCAPI, DuetAPI, DuetAPIWrapper
 
 class DuetWebAPIFactory:
     def __init__(self) -> None:
-        self._creators = {}
+        self._creators = OrderedDict()
 
     def __call__(self, base_url: str):
         Api = self.get_api(base_url)
@@ -29,7 +30,10 @@ class DuetWebAPIFactory:
     def register_api(self, name: str, creator: object, url_suffix: str) -> None:
         self._creators[name] = {'creator': creator, 'url_suffix': url_suffix}
 
-    def get_api(self, base_url) -> DuetAPI:
+    def get_api(self, base_url, api_name=None) -> DuetAPI:
+        if api_name in self._creators.keys():
+            return self._creators[api_name]['creator']
+
         for api in self._creators.values():
             if not base_url.startswith('http://'):
                 base_url = f'http://{base_url}'
@@ -52,5 +56,5 @@ class DuetWebAPIFactory:
 
 
 DuetWebAPI = DuetWebAPIFactory()
+DuetWebAPI.register_api(DSFAPI.api_name, DSFAPI, '/machine/status') # DSF supports some DWC commands in 3.5 so needs to be registered first
 DuetWebAPI.register_api(DWCAPI.api_name, DWCAPI, '/rr_model')
-DuetWebAPI.register_api(DSFAPI.api_name, DSFAPI, '/machine/status')

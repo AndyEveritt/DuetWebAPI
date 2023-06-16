@@ -19,9 +19,17 @@ class DSFAPI(DuetAPI):
     """
     api_name = 'DSF_REST'
 
+    def connect(self, password=''):
+        """ Start connection to Duet """
+        url = f'{self.base_url}/machine/connect'
+        r = self.session.get(url, {'password': password})
+        if not r.ok:
+            raise ValueError
+        return r.json()
+
     def get_model(self, key: str = None, **kwargs) -> Dict:
         url = f'{self.base_url}/machine/status'
-        r = requests.get(url)
+        r = self.session.get(url)
         j = r.json()
         if key is not None:
             keys = key.split('.')
@@ -30,7 +38,7 @@ class DSFAPI(DuetAPI):
 
     def send_code(self, code: str) -> Dict:
         url = f'{self.base_url}/machine/code'
-        r = requests.post(url, data=code)
+        r = self.session.post(url, data=code)
         return {'response': r.text}
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
@@ -42,7 +50,7 @@ class DSFAPI(DuetAPI):
         returns the file as a string or binary data
         """
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
-        r = requests.get(url)
+        r = self.session.get(url)
         if not r.ok:
             raise ValueError
         if binary:
@@ -56,42 +64,42 @@ class DSFAPI(DuetAPI):
         directory: the folder that the file is in, options are ['gcodes', 'macros', 'sys']
         """
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
-        r = requests.put(url, data=file, headers={'Content-Type': 'application/octet-stream'})
+        r = self.session.put(url, data=file, headers={'Content-Type': 'application/octet-stream'})
         if not r.ok:
             raise ValueError
         return {'err': 0}
 
     def get_fileinfo(self, filename: str = None, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/machine/fileinfo/{directory}/{filename}'
-        r = requests.get(url)
+        r = self.session.get(url)
         if not r.ok:
             raise ValueError
         return r.json()
 
     def delete_file(self, filename: str, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/machine/file/{directory}/{filename}'
-        r = requests.delete(url)
+        r = self.session.delete(url)
         if not r.ok:
             raise ValueError
         return {'err': 0}
 
     def move_file(self, from_path: str, to_path: str, force: bool = False) -> Dict:
         url = f'{self.base_url}/machine/file/move'
-        r = requests.post(url, {'from': f'{from_path}', 'to': f'{to_path}', 'force': force})
+        r = self.session.post(url, {'from': f'{from_path}', 'to': f'{to_path}', 'force': force})
         if not r.ok:
             raise ValueError
         return {'err': 0}
 
     def get_directory(self, directory: str) -> List[Dict]:
         url = f'{self.base_url}/machine/directory/{directory}'
-        r = requests.get(url)
+        r = self.session.get(url)
         if not r.ok:
             raise ValueError
         return r.json()
 
     def create_directory(self, directory: str) -> Dict:
         url = f'{self.base_url}/machine/directory/{directory}'
-        r = requests.put(url)
+        r = self.session.put(url)
         if not r.ok:
             raise ValueError
         return {'err': 0}
