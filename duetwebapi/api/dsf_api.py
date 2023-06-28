@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import Dict, List, Union
 from io import StringIO, TextIOWrapper, BytesIO
 from functools import reduce
@@ -8,6 +9,13 @@ import operator
 import requests
 
 from .base import DuetAPI
+
+
+def split_key(key: str):
+    pattern = r'\[(\d+)\]|([^.\[\]]+)'
+    result = re.findall(pattern, key)
+    result = [int(item) if item.isdigit() else item for item in sum(result, ()) if item]
+    return result
 
 
 class DSFAPI(DuetAPI):
@@ -32,7 +40,7 @@ class DSFAPI(DuetAPI):
         r = self.session.get(url)
         j = r.json()
         if key is not None:
-            keys = key.split('.')
+            keys = split_key(key)
             return reduce(operator.getitem, keys, j)
         return j
 
