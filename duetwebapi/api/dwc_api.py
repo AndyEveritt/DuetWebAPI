@@ -20,7 +20,7 @@ class DWCAPI(DuetAPI):
     def connect(self, password=''):
         """ Start connection to Duet """
         url = f'{self.base_url}/rr_connect'
-        r = self.session.get(url, {'password': password})
+        r = self.session.get(url, params={'password': password})
         if not r.ok:
             raise ValueError
         return r.json()
@@ -40,7 +40,7 @@ class DWCAPI(DuetAPI):
         flags += 'n' if null is True else ''
         flags += 'f' if frequent is True else ''
         flags += 'o' if obsolete is True else ''
-        r = self.session.get(url, {'flags': flags, 'key': key})
+        r = self.session.get(url, params={'flags': flags, 'key': key})
         if not r.ok:
             raise ValueError
         j = r.json()
@@ -55,7 +55,7 @@ class DWCAPI(DuetAPI):
 
     def send_code(self, code: str) -> Dict:
         url = f'{self.base_url}/rr_gcode'
-        r = self.session.get(url, {'gcode': code})
+        r = self.session.get(url, params={'gcode': code})
         if not r.ok:
             raise ValueError
         reply = self._get_reply()
@@ -70,7 +70,7 @@ class DWCAPI(DuetAPI):
         returns the file as a string or binary data
         """
         url = f'{self.base_url}/rr_download'
-        r = self.session.get(url, {'name': f'/{directory}/{filename}'})
+        r = self.session.get(url, params={'name': f'/{directory}/{filename}'})
         if not r.ok:
             raise ValueError
         if binary:
@@ -88,7 +88,7 @@ class DWCAPI(DuetAPI):
     def get_fileinfo(self, filename: str = None, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/rr_fileinfo'
         if filename:
-            r = self.session.get(url, {'name': f'/{directory}/{filename}'})
+            r = self.session.get(url, params={'name': f'/{directory}/{filename}'})
         else:
             r = self.session.get(url)
         if not r.ok:
@@ -97,7 +97,7 @@ class DWCAPI(DuetAPI):
 
     def delete_file(self, filename: str, directory: str = 'gcodes') -> Dict:
         url = f'{self.base_url}/rr_delete'
-        r = self.session.get(url, {'name': f'/{directory}/{filename}'})
+        r = self.session.get(url, params={'name': f'/{directory}/{filename}'})
         if not r.ok:
             raise ValueError
         return r.json()
@@ -106,21 +106,21 @@ class DWCAPI(DuetAPI):
         # BUG this doesn't work currently
         raise NotImplementedError
         url = f'{self.base_url}/rr_move'
-        r = self.session.get(url, {'old': f'{from_path}', 'new': f'{to_path}'})
+        r = self.session.get(url, params={'old': f'{from_path}', 'new': f'{to_path}'})
         if not r.ok:
             raise ValueError
         return r.json()
 
     def get_directory(self, directory: str) -> List[Dict]:
         url = f'{self.base_url}/rr_filelist'
-        r = self.session.get(url, {'dir': f'/{directory}'})
+        r = self.session.get(url, params={'dir': f'/{directory}'})
         if not r.ok:
             raise ValueError
         return r.json()['files']
 
     def create_directory(self, directory: str) -> Dict:
         url = f'{self.base_url}/rr_mkdir'
-        r = self.session.get(url, {'dir': f'/{directory}'})
+        r = self.session.get(url, params={'dir': f'/{directory}'})
         if not r.ok:
             raise ValueError
         return r.json()

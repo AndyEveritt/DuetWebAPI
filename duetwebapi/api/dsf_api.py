@@ -30,7 +30,7 @@ class DSFAPI(DuetAPI):
     def connect(self, password=''):
         """ Start connection to Duet """
         url = f'{self.base_url}/machine/connect'
-        r = self.session.get(url, {'password': password})
+        r = self.session.get(url, params={'password': password})
         if not r.ok:
             raise ValueError
         return r.json()
