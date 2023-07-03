@@ -40,7 +40,9 @@ class DuetWebAPIFactory:
             url = base_url + api['url_suffix']
             try:
                 r = requests.get(url, timeout=(2, 60))
-            except requests.exceptions.ConnectionError:
+                # RRF3.4.5 returns 200 even when the API is not available so need to try to convert to json
+                r.json()
+            except (requests.exceptions.ConnectionError, requests.exceptions.JSONDecodeError):
                 continue
             if r.ok:
                 creator = api['creator']
