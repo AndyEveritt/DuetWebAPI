@@ -14,7 +14,7 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        "requests >= 2.22.0",
+        "requests >= 2.31.0",
     ],
 
     author="Andy Everitt",
