@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import time
 from typing import Dict, List, Union
 from io import StringIO, TextIOWrapper, BytesIO
 from functools import reduce
@@ -30,14 +31,20 @@ class DSFAPI(DuetAPI):
     def connect(self, password=''):
         """ Start connection to Duet """
         url = f'{self.base_url}/machine/connect'
+        time.sleep(0.5)
         r = self.session.get(url, params={'password': password})
         if not r.ok:
             raise ValueError
-        return r.json()
+        
+        resp: Dict = r.json()
+        self.session_key = resp.get('key', None)
+        return resp
 
     def get_model(self, key: str = None, **kwargs) -> Dict:
         url = f'{self.base_url}/machine/status'
-        r = self.session.get(url)
+        r = self.session.get(url, headers={'X-Session': self.session_key})
+        if not r.ok:
+            raise ValueError
         j = r.json()
         if key is not None:
             keys = split_key(key)
@@ -46,7 +53,7 @@ class DSFAPI(DuetAPI):
 
     def send_code(self, code: str) -> Dict:
         url = f'{self.base_url}/machine/code'
-        r = self.session.post(url, data=code)
+        r = self.session.post(url, data=code, headers={'Content-Type': 'text/plain', 'X-Session': self.session_key})
         return {'response': r.text}
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:

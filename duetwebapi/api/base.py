@@ -10,6 +10,7 @@ class DuetAPI:
 
     def __init__(self, base_url: str) -> None:
         self.session = requests.Session()
+        self.session_key = None
         self.base_url = base_url
 
     def __repr__(self):
