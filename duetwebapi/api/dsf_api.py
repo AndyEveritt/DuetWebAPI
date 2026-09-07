@@ -40,6 +40,15 @@ class DSFAPI(DuetAPI):
         self.session_key = resp.get('key', None)
         return resp
 
+    def disconnect(self):
+        """ End connection to Duet """
+        url = f'{self.base_url}/machine/disconnect'
+        r = self.session.get(url, headers={'X-Session': self.session_key})
+        if not r.ok:
+            raise ValueError
+        self.session_key = None
+        return {'err': 0}
+
     def get_model(self, key: str = None, **kwargs) -> Dict:
         url = f'{self.base_url}/machine/status'
         r = self.session.get(url, headers={'X-Session': self.session_key})
@@ -51,10 +60,27 @@ class DSFAPI(DuetAPI):
             return reduce(operator.getitem, keys, j)
         return j
 
-    def send_code(self, code: str) -> Dict:
+    def send_code(self, code: str, timeout: float = 30, poll_interval: float = 0.02, wait: bool = True) -> Dict:
+        """ Send G/M/T-code to Duet and return its reply.
+
+        Unlike the standalone rr_gcode/rr_reply pair this is synchronous: DSF blocks
+        until the code has finished. The timeout and poll_interval arguments exist
+        only so that callers can treat both backends identically; timeout replaces
+        the session read timeout, and poll_interval is unused.
+
+        wait=False maps onto DSF's async mode, for codes that reset the board.
+        """
         url = f'{self.base_url}/machine/code'
-        r = self.session.post(url, data=code, headers={'Content-Type': 'text/plain', 'X-Session': self.session_key})
-        return {'response': r.text}
+        r = self.session.post(
+            url,
+            data=code,
+            params={'async': 'true'} if not wait else None,
+            headers={'Content-Type': 'text/plain', 'X-Session': self.session_key},
+            timeout=(self.session.timeout[0], timeout),
+        )
+        if not r.ok:
+            raise ValueError(f'Duet did not accept the code {code!r}: HTTP {r.status_code} {r.text}')
+        return {'response': r.text, 'seq': None}
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """

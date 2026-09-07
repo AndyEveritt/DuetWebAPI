@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Dict, List, Union
 from io import StringIO, TextIOWrapper, BytesIO
 
@@ -46,20 +47,69 @@ class DWCAPI(DuetAPI):
         j = r.json()
         return j['result']
 
-    def _get_reply(self) -> Dict:
+    def _get_reply(self) -> str:
         url = f'{self.base_url}/rr_reply'
         r = self.session.get(url)
         if not r.ok:
             raise ValueError
         return r.text
 
-    def send_code(self, code: str) -> Dict:
+    def _get_reply_seq(self) -> int:
+        """ Sequence number of the most recent G-code reply.
+
+        RepRapFirmware bumps HttpResponder::seq every time a reply is added to the
+        buffer and exposes it as seqs.reply. Polling it is the only way to know that
+        a reply belongs to the code you just sent, because rr_gcode is asynchronous
+        and rr_reply returns the accumulated text with no correlation id.
+
+        flags=f restricts the response to live fields, which is the cheap poll DWC
+        itself uses.
+        """
+        url = f'{self.base_url}/rr_model'
+        r = self.session.get(url, params={'key': 'seqs', 'flags': 'd2f'})
+        if not r.ok:
+            raise ValueError
+        return r.json()['result']['reply']
+
+    def send_code(self, code: str, timeout: float = 30, poll_interval: float = 0.02, wait: bool = True) -> Dict:
+        """ Send G/M/T-code to Duet and return its reply.
+
+        rr_gcode only queues the code and returns immediately, so we note
+        seqs.reply first and wait for it to change before fetching rr_reply.
+        Without that wait the text returned is whatever happened to be in the
+        buffer from an earlier code, or an empty string.
+
+        This is safe for codes that produce no output: GCodes::HandleReplyPreserveResult
+        sends a reply for every code that arrived on the HTTP channel, empty or not
+        ("DWC expects a reply from every code"), so the sequence number always moves.
+
+        wait=False skips the wait entirely, for codes that deliberately never reply
+        because they reset the board -- M999, and M112 followed by M999.
+        """
+        start_seq = None if not wait else self._get_reply_seq()
+
         url = f'{self.base_url}/rr_gcode'
         r = self.session.get(url, params={'gcode': code})
         if not r.ok:
             raise ValueError
-        reply = self._get_reply()
-        return {'response': reply}
+        if r.json().get('err'):
+            raise ValueError(f'Duet did not accept the code (buffer full, or too long): {code!r}')
+
+        if not wait:
+            return {'response': '', 'seq': None}
+
+        deadline = time.monotonic() + timeout
+        while True:
+            seq = self._get_reply_seq()
+            # Compared with != rather than > because seq is a uint16 and wraps.
+            if seq != start_seq:
+                break
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f'No reply to {code!r} after {timeout}s (seqs.reply stayed at {start_seq})')
+            time.sleep(poll_interval)
+
+        return {'response': self._get_reply(), 'seq': seq}
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """

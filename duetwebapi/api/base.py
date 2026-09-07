@@ -4,12 +4,33 @@ import requests
 import os
 import logging
 
+# (connect, read) seconds. Reads are given a generous budget because some codes
+# legitimately take a long time to reply, but they are no longer unbounded.
+DEFAULT_TIMEOUT = (5, 60)
+
+
+class TimeoutSession(requests.Session):
+    """ A Session that applies a default timeout to every request.
+
+    requests has no default timeout, so a board that stops responding part way
+    through a request blocks the caller forever. Passing timeout= to an individual
+    call still overrides this.
+    """
+
+    def __init__(self, timeout=DEFAULT_TIMEOUT) -> None:
+        super().__init__()
+        self.timeout = timeout
+
+    def request(self, *args, **kwargs):
+        kwargs.setdefault('timeout', self.timeout)
+        return super().request(*args, **kwargs)
+
 
 class DuetAPI:
     api_name = ''
 
-    def __init__(self, base_url: str) -> None:
-        self.session = requests.Session()
+    def __init__(self, base_url: str, timeout=DEFAULT_TIMEOUT) -> None:
+        self.session = TimeoutSession(timeout)
         self.session_key = None
         self.base_url = base_url
 
@@ -38,8 +59,8 @@ class DuetAPI:
         """ Get Duet object model. RRF3 only """
         raise NotImplementedError
 
-    def send_code(self, code: str) -> Dict:
-        """ Send G/M/T-code to Duet """
+    def send_code(self, code: str, **kwargs) -> Dict:
+        """ Send G/M/T-code to Duet and return its reply """
         raise NotImplementedError
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
