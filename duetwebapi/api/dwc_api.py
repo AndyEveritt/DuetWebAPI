@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import time
 from typing import Dict, List, Union
 from io import StringIO, TextIOWrapper, BytesIO
@@ -7,6 +8,35 @@ from io import StringIO, TextIOWrapper, BytesIO
 import requests
 
 from .base import DuetAPI
+
+#: Start of the line send_code echoes after each code to find the end of its reply.
+REPLY_MARKER_PREFIX = '__dwa:'
+
+
+def _merge_reply(text: str, fetched: str) -> str:
+    """ Add one rr_reply fetch to the text collected so far.
+
+    RepRapFirmware keeps a reply until every session has fetched it, so with
+    another client connected (a browser running DWC, say) a fetch returns the
+    whole buffer again, grown, rather than just what is new.
+    """
+    if fetched.startswith(text):
+        return fetched
+    return text + fetched
+
+
+def _reply_before(text: str, marker: str) -> str:
+    """ The part of the reply buffer that belongs to the code ending at marker.
+
+    A buffer kept for another session can still hold earlier codes' replies, each
+    ended by its own marker, so start after the last of those.
+    """
+    reply = text[:text.index(marker)]
+    earlier = reply.rfind(REPLY_MARKER_PREFIX)
+    if earlier >= 0:
+        line_end = reply.find('\n', earlier)
+        reply = reply[line_end + 1:] if line_end >= 0 else ''
+    return reply
 
 
 class DWCAPI(DuetAPI):
@@ -74,42 +104,53 @@ class DWCAPI(DuetAPI):
     def send_code(self, code: str, timeout: float = 30, poll_interval: float = 0.02, wait: bool = True) -> Dict:
         """ Send G/M/T-code to Duet and return its reply.
 
-        rr_gcode only queues the code and returns immediately, so we note
-        seqs.reply first and wait for it to change before fetching rr_reply.
-        Without that wait the text returned is whatever happened to be in the
-        buffer from an earlier code, or an empty string.
+        rr_gcode only queues the code and returns immediately, and rr_reply hands
+        back whatever has accumulated with nothing to say which code it belongs to.
+        Waiting for seqs.reply to move is not enough to tell: it moves for every
+        message sent to the HTTP channel, including asynchronous ones such as a
+        driver warning, so one of those arriving mid-move ends the wait early. The
+        code is then treated as finished while it is still running, and every reply
+        after it is attributed to the code before.
 
-        This is safe for codes that produce no output: GCodes::HandleReplyPreserveResult
-        sends a reply for every code that arrived on the HTTP channel, empty or not
-        ("DWC expects a reply from every code"), so the sequence number always moves.
+        So the code is followed, in the same request, by an echo of a marker unique
+        to this call. The HTTP channel runs its codes in order, so the marker can
+        only be echoed once the code has finished -- macros, M400 and all -- and
+        everything before it in the reply buffer is the code's reply. Asynchronous
+        messages that arrive while the code runs are still included, since nothing
+        distinguishes them from the code's own output.
 
         wait=False skips the wait entirely, for codes that deliberately never reply
         because they reset the board -- M999, and M112 followed by M999.
         """
-        start_seq = None if not wait else self._get_reply_seq()
+        if not wait:
+            self._queue_gcode(code)
+            return {'response': '', 'seq': None}
 
+        marker = f'{REPLY_MARKER_PREFIX}{secrets.token_hex(6)}'
+        seq = self._get_reply_seq()
+        self._queue_gcode(f'{code}\necho "{marker}"', code)
+
+        text = ''
+        deadline = time.monotonic() + timeout
+        while True:
+            latest = self._get_reply_seq()
+            # Compared with != rather than > because seq is a uint16 and wraps.
+            if latest != seq:
+                seq = latest
+                text = _merge_reply(text, self._get_reply())
+                if marker in text:
+                    return {'response': _reply_before(text, marker), 'seq': seq}
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f'No reply to {code!r} after {timeout}s')
+            time.sleep(poll_interval)
+
+    def _queue_gcode(self, gcode: str, code: str = None) -> None:
         url = f'{self.base_url}/rr_gcode'
-        r = self.session.get(url, params={'gcode': code})
+        r = self.session.get(url, params={'gcode': gcode})
         if not r.ok:
             raise ValueError
         if r.json().get('err'):
-            raise ValueError(f'Duet did not accept the code (buffer full, or too long): {code!r}')
-
-        if not wait:
-            return {'response': '', 'seq': None}
-
-        deadline = time.monotonic() + timeout
-        while True:
-            seq = self._get_reply_seq()
-            # Compared with != rather than > because seq is a uint16 and wraps.
-            if seq != start_seq:
-                break
-            if time.monotonic() >= deadline:
-                raise TimeoutError(
-                    f'No reply to {code!r} after {timeout}s (seqs.reply stayed at {start_seq})')
-            time.sleep(poll_interval)
-
-        return {'response': self._get_reply(), 'seq': seq}
+            raise ValueError(f'Duet did not accept the code (buffer full, or too long): {code or gcode!r}')
 
     def get_file(self, filename: str, directory: str = 'gcodes', binary: bool = False) -> str:
         """
