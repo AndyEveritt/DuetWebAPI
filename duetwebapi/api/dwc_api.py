@@ -25,6 +25,16 @@ _FILE_WRITE = re.compile(r'(?mi)^\s*(?:N\d+\s+)?M(?:28|559|560)(?![\d.])')
 _NEVER_REPLIES = re.compile(
     r'(?mi)^\s*(?:N\d+\s+)?(?:M112(?![\d.])|M999(?![\d.])(?![^;\n]*\s(?:A|B\s*0*[1-9])))')
 
+#: M122 with nothing after it but a comment. RegularGCodeInput::CheckForUrgentCommand
+#: spots it as the characters arrive, takes it out of the input and asks the main task
+#: for RepRap::DeferredDiagnostics instead, so it never runs in its place on the
+#: channel. The report is generated at the end of the main loop pass that has just run
+#: the marker after it, so it lands in the buffer *after* the marker. Measured on an
+#: MB6HC: the marker, then 3.6 kB of diagnostics, in one fetch. Anything after the
+#: 122 but a control character or ';' -- a space included -- makes it an ordinary
+#: code, as does a line number, since the scanner only looks at the start of a line.
+_URGENT_DIAGNOSTICS = re.compile(r'(?mi)^[ \t]*M122(?=[\x00-\x1f;]|$)')
+
 
 def _merge_reply(text: str, fetched: str) -> str:
     """ Add one rr_reply fetch to the text collected so far.
@@ -136,6 +146,11 @@ class DWCAPI(DuetAPI):
         everything after it on the channel goes into the file, the marker included.
         Those fall back to waiting for seqs.reply to move.
 
+        A bare M122 is run out of band, and its report lands after the marker rather
+        than before it (see _URGENT_DIAGNOSTICS). So once that marker is back a second
+        one is sent: it can only be echoed after the report, and the reply is
+        everything before the first marker and between the two.
+
         wait=False skips the wait entirely, for codes that deliberately never reply
         because they reset the board. M112 and M999 are recognised and never waited
         for whatever wait says, since waiting for them can only time out.
@@ -146,12 +161,24 @@ class DWCAPI(DuetAPI):
         if _FILE_WRITE.search(code):
             return self._send_unmarked(code, timeout, poll_interval)
 
+        deadline = time.monotonic() + timeout
         marker = f'{REPLY_MARKER_PREFIX}{secrets.token_hex(6)}'
         seq = self._get_reply_seq()
         self._queue_gcode(f'{code}\necho "{marker}"', code)
+        text, seq = self._wait_for_marker(marker, '', seq, code, deadline, timeout, poll_interval)
+        response = _reply_before(text, marker)
 
-        text = ''
-        deadline = time.monotonic() + timeout
+        if _URGENT_DIAGNOSTICS.search(code):
+            after = f'{REPLY_MARKER_PREFIX}{secrets.token_hex(6)}'
+            self._queue_gcode(f'echo "{after}"', code)
+            text, seq = self._wait_for_marker(after, text, seq, code, deadline, timeout, poll_interval)
+            response += _reply_before(text, after)
+
+        return {'response': response, 'seq': seq}
+
+    def _wait_for_marker(self, marker: str, text: str, seq: int, code: str,
+                         deadline: float, timeout: float, poll_interval: float):
+        """ Collect the reply buffer until marker is in it. Returns the text and seq. """
         while True:
             latest = self._get_reply_seq()
             # Compared with != rather than > because seq is a uint16 and wraps.
@@ -159,7 +186,7 @@ class DWCAPI(DuetAPI):
                 seq = latest
                 text = _merge_reply(text, self._get_reply())
                 if marker in text:
-                    return {'response': _reply_before(text, marker), 'seq': seq}
+                    return text, seq
             if time.monotonic() >= deadline:
                 raise TimeoutError(f'No reply to {code!r} after {timeout}s')
             time.sleep(poll_interval)
