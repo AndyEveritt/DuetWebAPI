@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import secrets
 import time
 from typing import Dict, List, Union
@@ -11,6 +12,18 @@ from .base import DuetAPI
 
 #: Start of the line send_code echoes after each code to find the end of its reply.
 REPLY_MARKER_PREFIX = '__dwa:'
+
+#: Codes that switch the channel into writing to a file: M28 until an M29, M559 and
+#: M560 until the upload is complete. Every line after one is written into the file
+#: rather than run, the reply marker included, so the marker would never come back
+#: and would end up in the file.
+_FILE_WRITE = re.compile(r'(?mi)^\s*(?:N\d+\s+)?M(?:28|559|560)(?![\d.])')
+
+#: Codes that can never be answered. M112 aborts every input channel, the one it
+#: arrived on included; M999 restarts the board. Not M999 B<n> for another board, nor
+#: M999 A<n>, which flashes a PanelDue: the main board replies to both.
+_NEVER_REPLIES = re.compile(
+    r'(?mi)^\s*(?:N\d+\s+)?(?:M112(?![\d.])|M999(?![\d.])(?![^;\n]*\s(?:A|B\s*0*[1-9])))')
 
 
 def _merge_reply(text: str, fetched: str) -> str:
@@ -119,12 +132,19 @@ class DWCAPI(DuetAPI):
         messages that arrive while the code runs are still included, since nothing
         distinguishes them from the code's own output.
 
+        The exception is a code that starts writing to a file (M28, M559, M560):
+        everything after it on the channel goes into the file, the marker included.
+        Those fall back to waiting for seqs.reply to move.
+
         wait=False skips the wait entirely, for codes that deliberately never reply
-        because they reset the board -- M999, and M112 followed by M999.
+        because they reset the board. M112 and M999 are recognised and never waited
+        for whatever wait says, since waiting for them can only time out.
         """
-        if not wait:
+        if not wait or _NEVER_REPLIES.search(code):
             self._queue_gcode(code)
             return {'response': '', 'seq': None}
+        if _FILE_WRITE.search(code):
+            return self._send_unmarked(code, timeout, poll_interval)
 
         marker = f'{REPLY_MARKER_PREFIX}{secrets.token_hex(6)}'
         seq = self._get_reply_seq()
@@ -140,6 +160,25 @@ class DWCAPI(DuetAPI):
                 text = _merge_reply(text, self._get_reply())
                 if marker in text:
                     return {'response': _reply_before(text, marker), 'seq': seq}
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f'No reply to {code!r} after {timeout}s')
+            time.sleep(poll_interval)
+
+    def _send_unmarked(self, code: str, timeout: float, poll_interval: float) -> Dict:
+        """ Send a code that starts writing to a file, and wait for its reply.
+
+        No marker can follow it (see _FILE_WRITE), so this falls back to waiting for
+        seqs.reply to move. That can be fooled by an asynchronous message, but these
+        codes reply as soon as the file is opened, so the window for one is small.
+        """
+        seq = self._get_reply_seq()
+        self._queue_gcode(code)
+        deadline = time.monotonic() + timeout
+        while True:
+            latest = self._get_reply_seq()
+            # Compared with != rather than > because seq is a uint16 and wraps.
+            if latest != seq:
+                return {'response': self._get_reply(), 'seq': latest}
             if time.monotonic() >= deadline:
                 raise TimeoutError(f'No reply to {code!r} after {timeout}s')
             time.sleep(poll_interval)
